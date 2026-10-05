@@ -193,7 +193,7 @@ export const createTransferOrder = async ({
       p_from_branch_id: originBranch.id,
       p_to_branch_id: destinationBranch.id,
       // SEGURIDAD DE AUDITORÍA (verificado en Supabase 2026-09-28,
-      // validación unificada Q1/Q2/Q3 = 3 ✅✅✅, parche aplicado en BD):
+      // validación unificada Q1/Q2/Q3 = 3, parche aplicado en BD):
       // (a) AUTORÍA: p_user_id se envía como fallback defensivo.
       //     El RPC server-side hace p_user_id := COALESCE(auth.uid(), p_user_id).
       //     Bajo flujo normal con JWT authenticated, auth.uid() es non-null
