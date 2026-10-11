@@ -70,6 +70,18 @@ export const validateUserForm = (values, mode) => {
     if (values.password !== values.confirmPassword) {
       errors.confirmPassword = "Las contraseñas no coinciden.";
     }
+  } else {
+    const password = String(values.password || "");
+
+    if (password.length > 0) {
+      if (password.length < 6) {
+        errors.password = "Debe tener al menos 6 caracteres.";
+      }
+
+      if (password !== values.confirmPassword) {
+        errors.confirmPassword = "Las contraseñas no coinciden.";
+      }
+    }
   }
 
   return errors;

@@ -11,6 +11,7 @@ import {
   fetchRoles,
   fetchUsers,
   updateUser,
+  updateUserPassword,
   updateUserStatus,
 } from "../services/usersDataService";
 
@@ -164,20 +165,53 @@ const useSettingsUsers = () => {
         return;
       }
 
-      const result =
-        formModal.mode === "edit"
-          ? await updateUser({
-              id: formModal.user?.id,
-              name: form.name,
-              roleId,
-            })
-          : await createUser({
-              name: form.name,
-              username: form.username,
-              email: form.email,
-              roleId,
-              password: form.password,
+      if (formModal.mode === "edit") {
+        const updateResult = await updateUser({
+          id: formModal.user?.id,
+          name: form.name,
+          roleId,
+        });
+
+        if (!updateResult.success) {
+          setSaving(false);
+          setFeedback({ type: "error", message: updateResult.error });
+          return;
+        }
+
+        let message = "Usuario actualizado.";
+
+        if (form.password) {
+          const passwordResult = await updateUserPassword({
+            id: formModal.user?.id,
+            password: form.password,
+          });
+
+          if (!passwordResult.success) {
+            setSaving(false);
+            setFeedback({
+              type: "error",
+              message: `Los datos se guardaron, pero la contraseña no se pudo actualizar: ${passwordResult.error}`,
             });
+            return;
+          }
+
+          message = "Usuario y contraseña actualizados.";
+        }
+
+        setSaving(false);
+        setFormModal((prev) => ({ ...prev, isOpen: false }));
+        setFeedback({ type: "success", message });
+        setReloadCount((count) => count + 1);
+        return;
+      }
+
+      const result = await createUser({
+        name: form.name,
+        username: form.username,
+        email: form.email,
+        roleId,
+        password: form.password,
+      });
 
       setSaving(false);
 
@@ -186,13 +220,9 @@ const useSettingsUsers = () => {
         return;
       }
 
-      let message = "Usuario actualizado.";
-
-      if (formModal.mode === "create") {
-        message = result.requiresConfirmation
-          ? "Usuario creado. Debe confirmar su correo antes de iniciar sesión."
-          : "Usuario creado. Ya puede iniciar sesión con sus credenciales iniciales.";
-      }
+      const message = result.requiresConfirmation
+        ? "Usuario creado. Debe confirmar su correo antes de iniciar sesión."
+        : "Usuario creado. Ya puede iniciar sesión con sus credenciales iniciales.";
 
       setFormModal((prev) => ({ ...prev, isOpen: false }));
       setFeedback({ type: "success", message });

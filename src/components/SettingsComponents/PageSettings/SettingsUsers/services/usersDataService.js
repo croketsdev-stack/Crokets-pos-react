@@ -166,6 +166,64 @@ export const updateUserStatus = async ({ id, status }) => {
 };
 
 /**
+ * Restablece la contraseña de un usuario existente.
+ *
+ * La contraseña vive en `auth.users`, que solo se puede escribir con la
+ * service role. Por eso la operación se delega a la edge function
+ * `admin-reset-user-password`, que valida que quien invoca tenga rol de
+ * administrador antes de aplicar el cambio. El guardado de los datos básicos
+ * (nombre y rol) es independiente y no depende de este resultado.
+ */
+export const updateUserPassword = async ({ id, password }) => {
+  const targetId = String(id || "").trim();
+  const cleanPassword = String(password || "");
+
+  if (!targetId) {
+    return {
+      success: false,
+      data: null,
+      error: "Falta el identificador del usuario.",
+    };
+  }
+
+  if (cleanPassword.length < 6) {
+    return {
+      success: false,
+      data: null,
+      error: "La contraseña debe tener al menos 6 caracteres.",
+    };
+  }
+
+  const { data, error } = await supabase.functions.invoke(
+    "admin-reset-user-password",
+    {
+      body: { targetId, newPassword: cleanPassword },
+    }
+  );
+
+  if (error) {
+    console.error("Error restableciendo la contraseña del usuario:", error);
+
+    return {
+      success: false,
+      data: null,
+      error:
+        "No se pudo restablecer la contraseña. Intenta de nuevo más tarde.",
+    };
+  }
+
+  if (data && data.ok === false) {
+    return {
+      success: false,
+      data: null,
+      error: data.message || "No se pudo restablecer la contraseña.",
+    };
+  }
+
+  return { success: true, data: { id: targetId }, error: null };
+};
+
+/**
  * Registra un usuario nuevo.
  *
  * La cuenta de autenticacion se crea con `auth.signUp`; si el proyecto exige
