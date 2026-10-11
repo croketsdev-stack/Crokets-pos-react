@@ -31,7 +31,7 @@ const SearchFilters = ({
         id="settings-users-search"
         type="search"
         className={styles.searchInput}
-        placeholder="Buscar por nombre, @usuario o correo"
+        placeholder="Buscar por nombre, @usuario, correo o ID"
         value={searchTerm}
         onChange={(event) => onSearchChange(event.target.value)}
       />
