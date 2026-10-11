@@ -450,8 +450,16 @@
 }
 
 .actionsCell {
+  padding: 0.85rem 1.5rem;
   text-align: right;
   white-space: nowrap;
+}
+
+.actionsGroup {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
 }
 
 .iconButton {
@@ -460,7 +468,6 @@
   justify-content: center;
   width: 2rem;
   height: 2rem;
-  margin-left: 0.35rem;
   border-radius: 6px;
   border: 1px solid #d1d5db;
   background: #ffffff;
@@ -570,9 +577,8 @@
 
 .modalHeader {
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 1rem;
+  flex-direction: column;
+  gap: 0.2rem;
   padding: 1.25rem 1.5rem 0.75rem;
 }
 
@@ -587,33 +593,6 @@
   color: #6b7280;
   font-size: 0.82rem;
   margin: 0;
-}
-
-.modalClose {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 2rem;
-  height: 2rem;
-  border: 1px solid #d1d5db;
-  border-radius: 6px;
-  background: #ffffff;
-  cursor: pointer;
-  flex-shrink: 0;
-}
-
-.modalClose:hover:not(:disabled) {
-  background: #f1f5f9;
-}
-
-.modalClose:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.modalClose:focus-visible {
-  outline: 3px solid #05313d;
-  outline-offset: 2px;
 }
 
 .modalBody {

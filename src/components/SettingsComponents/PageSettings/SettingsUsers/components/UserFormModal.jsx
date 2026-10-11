@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 
 import styles from "../SettingsUsers.module.css";
-import xmarkIcon from "../../../../../assets/icons/xmark-solid-full.svg";
 import circleInfoIcon from "../../../../../assets/icons/circle-info-solid-full.svg";
 import useUserForm, { USER_FORM_EDIT } from "../hooks/useUserForm";
 import { ROLE_OPTIONS } from "../hooks/useSettingsUsers";
@@ -49,30 +48,14 @@ const UserFormModal = ({ isOpen, mode, user, saving, onSubmit, onClose }) => {
         aria-labelledby="settings-users-form-title"
       >
         <div className={styles.modalHeader}>
-          <div>
-            <h2 id="settings-users-form-title" className={styles.modalTitle}>
-              {isEdit ? "Editar usuario" : "Nuevo usuario"}
-            </h2>
-            <p className={styles.modalSubtitle}>
-              {isEdit
-                ? "Actualiza el nombre y el rol de la cuenta."
-                : "Crea una cuenta de acceso al sistema."}
-            </p>
-          </div>
-          <button
-            type="button"
-            className={styles.modalClose}
-            onClick={onClose}
-            disabled={saving}
-            aria-label="Cerrar"
-          >
-            <img
-              src={xmarkIcon}
-              alt=""
-              aria-hidden="true"
-              className={styles.actionIcon}
-            />
-          </button>
+          <h2 id="settings-users-form-title" className={styles.modalTitle}>
+            {isEdit ? "Editar usuario" : "Nuevo usuario"}
+          </h2>
+          <p className={styles.modalSubtitle}>
+            {isEdit
+              ? "Actualiza el nombre y el rol de la cuenta."
+              : "Crea una cuenta de acceso al sistema."}
+          </p>
         </div>
 
         <form className={styles.modalBody} onSubmit={handleSubmit} noValidate>

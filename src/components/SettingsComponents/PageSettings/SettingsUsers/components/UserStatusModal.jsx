@@ -1,7 +1,6 @@
 import { useEffect } from "react";
 
 import styles from "../SettingsUsers.module.css";
-import xmarkIcon from "../../../../../assets/icons/xmark-solid-full.svg";
 import lockIcon from "../../../../../assets/icons/lock-solid-full.svg";
 import circleCheckIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
 import { getUserDisplayName, getUserInitials } from "../utils/usersFormatters";
@@ -42,28 +41,12 @@ const UserStatusModal = ({ isOpen, user, saving, onConfirm, onClose }) => {
         aria-labelledby="settings-users-status-title"
       >
         <div className={styles.modalHeader}>
-          <div>
-            <h2 id="settings-users-status-title" className={styles.modalTitle}>
-              {actionLabel} usuario
-            </h2>
-            <p className={styles.modalSubtitle}>
-              Confirma el cambio de estado de esta cuenta.
-            </p>
-          </div>
-          <button
-            type="button"
-            className={styles.modalClose}
-            onClick={onClose}
-            disabled={saving}
-            aria-label="Cerrar"
-          >
-            <img
-              src={xmarkIcon}
-              alt=""
-              aria-hidden="true"
-              className={styles.actionIcon}
-            />
-          </button>
+          <h2 id="settings-users-status-title" className={styles.modalTitle}>
+            {actionLabel} usuario
+          </h2>
+          <p className={styles.modalSubtitle}>
+            Confirma el cambio de estado de esta cuenta.
+          </p>
         </div>
 
         <div className={styles.modalBody}>

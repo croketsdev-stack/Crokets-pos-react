@@ -99,48 +99,50 @@ const UsersTableRow = ({
       </td>
 
       <td className={styles.actionsCell}>
-        <button
-          type="button"
-          className={styles.iconButton}
-          onClick={() => onEdit(user)}
-          aria-label={`Editar a ${displayName}`}
-        >
-          <img
-            src={pencilIcon}
-            alt=""
-            aria-hidden="true"
-            className={styles.actionIcon}
-          />
-        </button>
+        <div className={styles.actionsGroup}>
+          <button
+            type="button"
+            className={styles.iconButton}
+            onClick={() => onEdit(user)}
+            aria-label={`Editar a ${displayName}`}
+          >
+            <img
+              src={pencilIcon}
+              alt=""
+              aria-hidden="true"
+              className={styles.actionIcon}
+            />
+          </button>
 
-        <button
-          type="button"
-          className={styles.iconButton}
-          onClick={() => onToggleStatus(user)}
-          disabled={isCurrentUser}
-          aria-label={
-            isActive
-              ? `Desactivar a ${displayName}`
-              : `Activar a ${displayName}`
-          }
-          title={
-            isCurrentUser
-              ? "No puedes cambiar tu propio estado"
-              : isActive
-                ? "Desactivar usuario"
-                : "Activar usuario"
-          }
-        >
-          <img
-            src={isActive ? lockIcon : circleCheckIcon}
-            alt=""
-            aria-hidden="true"
-            className={joinClassNames(
-              styles.actionIcon,
-              isActive ? styles.actionIconDanger : ""
-            )}
-          />
-        </button>
+          <button
+            type="button"
+            className={styles.iconButton}
+            onClick={() => onToggleStatus(user)}
+            disabled={isCurrentUser}
+            aria-label={
+              isActive
+                ? `Desactivar a ${displayName}`
+                : `Activar a ${displayName}`
+            }
+            title={
+              isCurrentUser
+                ? "No puedes cambiar tu propio estado"
+                : isActive
+                  ? "Desactivar usuario"
+                  : "Activar usuario"
+            }
+          >
+            <img
+              src={isActive ? lockIcon : circleCheckIcon}
+              alt=""
+              aria-hidden="true"
+              className={joinClassNames(
+                styles.actionIcon,
+                isActive ? styles.actionIconDanger : ""
+              )}
+            />
+          </button>
+        </div>
       </td>
     </tr>
   );
