@@ -10,7 +10,6 @@ const UsersTable = ({
   currentUserId,
   onEdit,
   onToggleStatus,
-  onCopyId,
 }) => {
   if (loading) {
     return (
@@ -71,16 +70,13 @@ const UsersTable = ({
                 Usuario
               </th>
               <th scope="col" className={styles.headerCell}>
-                Correo
-              </th>
-              <th scope="col" className={styles.headerCell}>
                 Rol
               </th>
               <th scope="col" className={styles.headerCell}>
                 Estado
               </th>
               <th scope="col" className={styles.headerCell}>
-                Fecha de Creación
+                Registro
               </th>
               <th
                 scope="col"
@@ -98,7 +94,6 @@ const UsersTable = ({
                 currentUserId={currentUserId}
                 onEdit={onEdit}
                 onToggleStatus={onToggleStatus}
-                onCopyId={onCopyId}
               />
             ))}
           </tbody>

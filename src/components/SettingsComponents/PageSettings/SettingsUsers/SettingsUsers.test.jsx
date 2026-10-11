@@ -73,7 +73,7 @@ describe("SettingsUsers", () => {
     render(<SettingsUsers />);
 
     expect(await screen.findByText("Ana Torres")).toBeTruthy();
-    expect(screen.getByText("luis@crokets.test")).toBeTruthy();
+    expect(screen.getByText("@luis · luis@crokets.test")).toBeTruthy();
 
     const kpis = within(
       screen.getByRole("region", { name: "Resumen de usuarios" })
@@ -90,10 +90,9 @@ describe("SettingsUsers", () => {
     const headers = screen.getAllByRole("columnheader");
     expect(headers.map((th) => th.textContent)).toEqual([
       "Usuario",
-      "Correo",
       "Rol",
       "Estado",
-      "Fecha de Creación",
+      "Registro",
       "Acciones",
     ]);
     headers.forEach((th) => expect(th.getAttribute("scope")).toBe("col"));
