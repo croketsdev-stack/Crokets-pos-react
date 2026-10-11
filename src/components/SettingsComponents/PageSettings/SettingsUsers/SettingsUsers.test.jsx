@@ -312,4 +312,34 @@ describe("SettingsUsers", () => {
     await waitFor(() => expect(updateUser).toHaveBeenCalledTimes(1));
     expect(updateUserPassword).not.toHaveBeenCalled();
   });
+
+  it("restablece el estado de copiado al cerrar el modal", async () => {
+    mockLoadSuccess();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText },
+      configurable: true,
+    });
+
+    render(<SettingsUsers />);
+
+    await screen.findByText("Ana Torres");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Editar a Ana Torres" })
+    );
+    fireEvent.click(screen.getByRole("button", { name: "Copiar" }));
+
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Copiado" })).toBeTruthy()
+    );
+    expect(writeText).toHaveBeenCalledWith("u1");
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Editar a Ana Torres" })
+    );
+
+    expect(screen.getByRole("button", { name: "Copiar" })).toBeTruthy();
+  });
 });

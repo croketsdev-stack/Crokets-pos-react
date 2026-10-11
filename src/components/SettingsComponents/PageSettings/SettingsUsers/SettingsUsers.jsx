@@ -110,7 +110,9 @@ const SettingsUsers = () => {
       />
 
       <UserFormModal
-        key={`user-form-${formModal.mode}-${formModal.user?.id || "new"}`}
+        key={`user-form-${formModal.mode}-${
+          formModal.user?.id || "new"
+        }-${formModal.isOpen ? "open" : "closed"}`}
         isOpen={formModal.isOpen}
         mode={formModal.mode}
         user={formModal.user}
