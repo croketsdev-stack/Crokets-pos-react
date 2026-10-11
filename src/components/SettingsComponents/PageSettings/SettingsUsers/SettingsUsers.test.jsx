@@ -8,14 +8,21 @@ import {
 } from "@testing-library/react";
 import SettingsUsers from "./SettingsUsers";
 
-const { fetchUsers, fetchRoles, updateUser, updateUserStatus, createUser } =
-  vi.hoisted(() => ({
-    fetchUsers: vi.fn(),
-    fetchRoles: vi.fn(),
-    updateUser: vi.fn(),
-    updateUserStatus: vi.fn(),
-    createUser: vi.fn(),
-  }));
+const {
+  fetchUsers,
+  fetchRoles,
+  updateUser,
+  updateUserStatus,
+  createUser,
+  updateUserPassword,
+} = vi.hoisted(() => ({
+  fetchUsers: vi.fn(),
+  fetchRoles: vi.fn(),
+  updateUser: vi.fn(),
+  updateUserStatus: vi.fn(),
+  createUser: vi.fn(),
+  updateUserPassword: vi.fn(),
+}));
 
 vi.mock("./services/usersDataService", () => ({
   fetchUsers,
@@ -23,6 +30,7 @@ vi.mock("./services/usersDataService", () => ({
   updateUser,
   updateUserStatus,
   createUser,
+  updateUserPassword,
 }));
 
 vi.mock("../../../../contexts/AuthContext", () => ({
@@ -218,5 +226,90 @@ describe("SettingsUsers", () => {
         password: "secreto123",
       })
     );
+  });
+
+  it("muestra los datos de solo lectura al editar", async () => {
+    mockLoadSuccess();
+
+    render(<SettingsUsers />);
+
+    await screen.findByText("Ana Torres");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Editar a Ana Torres" })
+    );
+
+    const dialog = screen.getByRole("dialog");
+    expect(within(dialog).getByText("@ana")).toBeTruthy();
+    expect(within(dialog).getByText("ana@crokets.test")).toBeTruthy();
+    expect(within(dialog).getByText("u1")).toBeTruthy();
+    expect(dialog.querySelector("input#settings-users-username")).toBeNull();
+    expect(dialog.querySelector("input#settings-users-email")).toBeNull();
+  });
+
+  it("actualiza datos y contrasena al editar con nueva clave", async () => {
+    mockLoadSuccess();
+    updateUser.mockResolvedValue({ success: true, data: null, error: null });
+    updateUserPassword.mockResolvedValue({
+      success: true,
+      data: { id: "u1" },
+      error: null,
+    });
+
+    render(<SettingsUsers />);
+
+    await screen.findByText("Ana Torres");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Editar a Ana Torres" })
+    );
+
+    fireEvent.change(screen.getByLabelText("Nombre completo"), {
+      target: { value: "Ana Actualizada" },
+    });
+    fireEvent.change(screen.getByLabelText("Nueva contraseña"), {
+      target: { value: "nuevaClave1" },
+    });
+    fireEvent.change(screen.getByLabelText("Confirmar nueva contraseña"), {
+      target: { value: "nuevaClave1" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() =>
+      expect(updateUser).toHaveBeenCalledWith({
+        id: "u1",
+        name: "Ana Actualizada",
+        roleId: "role-admin",
+      })
+    );
+    await waitFor(() =>
+      expect(updateUserPassword).toHaveBeenCalledWith({
+        id: "u1",
+        password: "nuevaClave1",
+      })
+    );
+  });
+
+  it("no restablece la contrasena al editar sin nueva clave", async () => {
+    mockLoadSuccess();
+    updateUser.mockResolvedValue({ success: true, data: null, error: null });
+
+    render(<SettingsUsers />);
+
+    await screen.findByText("Ana Torres");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Editar a Ana Torres" })
+    );
+
+    fireEvent.change(screen.getByLabelText("Nombre completo"), {
+      target: { value: "Ana Actualizada" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() => expect(updateUser).toHaveBeenCalledTimes(1));
+    expect(updateUserPassword).not.toHaveBeenCalled();
   });
 });

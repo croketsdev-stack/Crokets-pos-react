@@ -7,12 +7,16 @@ import {
   normalizeRoleName,
   normalizeUserRow,
   updateUser,
+  updateUserPassword,
   updateUserStatus,
 } from "./usersDataService";
 
 vi.mock("../../../../../lib/supabaseClient", () => ({
   supabase: {
     from: vi.fn(),
+    functions: {
+      invoke: vi.fn(),
+    },
     auth: {
       getSession: vi.fn(),
       signUp: vi.fn(),
@@ -310,6 +314,80 @@ describe("usersDataService", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("fallo estado");
+      expect(consoleError).toHaveBeenCalled();
+
+      consoleError.mockRestore();
+    });
+  });
+
+  describe("updateUserPassword", () => {
+    it("invoca la edge function admin-reset-user-password", async () => {
+      supabase.functions.invoke.mockResolvedValue({
+        data: { ok: true, targetId: "u1" },
+        error: null,
+      });
+
+      const result = await updateUserPassword({
+        id: "u1",
+        password: "nuevaClave1",
+      });
+
+      expect(supabase.functions.invoke).toHaveBeenCalledWith(
+        "admin-reset-user-password",
+        { body: { targetId: "u1", newPassword: "nuevaClave1" } }
+      );
+      expect(result).toEqual({
+        success: true,
+        data: { id: "u1" },
+        error: null,
+      });
+    });
+
+    it("rechaza la operacion sin identificador", async () => {
+      const result = await updateUserPassword({ password: "nuevaClave1" });
+
+      expect(result.success).toBe(false);
+      expect(supabase.functions.invoke).not.toHaveBeenCalled();
+    });
+
+    it("rechaza contrasenas menores a 6 caracteres", async () => {
+      const result = await updateUserPassword({ id: "u1", password: "123" });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("6 caracteres");
+      expect(supabase.functions.invoke).not.toHaveBeenCalled();
+    });
+
+    it("propaga el rechazo de la edge function", async () => {
+      supabase.functions.invoke.mockResolvedValue({
+        data: { ok: false, message: "Solo un administrador puede..." },
+        error: null,
+      });
+
+      const result = await updateUserPassword({
+        id: "u1",
+        password: "nuevaClave1",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toContain("Solo un administrador");
+    });
+
+    it("propaga el error de la invocacion", async () => {
+      const consoleError = vi
+        .spyOn(console, "error")
+        .mockImplementation(() => {});
+      supabase.functions.invoke.mockResolvedValue({
+        data: null,
+        error: { message: "fallo de red" },
+      });
+
+      const result = await updateUserPassword({
+        id: "u1",
+        password: "nuevaClave1",
+      });
+
+      expect(result.success).toBe(false);
       expect(consoleError).toHaveBeenCalled();
 
       consoleError.mockRestore();
