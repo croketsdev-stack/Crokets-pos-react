@@ -191,6 +191,46 @@ describe("validateUserForm", () => {
     expect(errors.password).toBeTruthy();
     expect(errors.confirmPassword).toBe("Las contraseñas no coinciden.");
   });
+
+  it("valida el username en edicion contra el catalogo excluyendo al propio usuario", () => {
+    const base = {
+      name: "Ana",
+      role: "admin",
+      password: "",
+      confirmPassword: "",
+    };
+    const existing = [
+      { id: "u1", username: "ana" },
+      { id: "u2", username: "luis" },
+    ];
+
+    expect(
+      validateUserForm(
+        { ...base, username: "ana" },
+        USER_FORM_EDIT,
+        existing,
+        "u1"
+      ).username
+    ).toBeUndefined();
+
+    expect(
+      validateUserForm(
+        { ...base, username: "nuevo" },
+        USER_FORM_EDIT,
+        existing,
+        "u1"
+      ).username
+    ).toBeUndefined();
+
+    expect(
+      validateUserForm(
+        { ...base, username: "luis" },
+        USER_FORM_EDIT,
+        existing,
+        "u1"
+      ).username
+    ).toBe(USERNAME_TAKEN_MESSAGE);
+  });
 });
 
 describe("useUserForm", () => {
@@ -355,5 +395,58 @@ describe("useUserForm", () => {
 
     expect(onSubmit).toHaveBeenCalledTimes(1);
     expect(onSubmit.mock.calls[0][0].name).toBe("ANA TORRES");
+  });
+
+  it("permite cambiar el username a uno libre en edicion", () => {
+    const onSubmit = vi.fn();
+    const { result } = renderHook(() =>
+      useUserForm({
+        mode: USER_FORM_EDIT,
+        user: USERS_FIXTURE,
+        existingUsers: [
+          { id: "u1", username: "ana" },
+          { id: "u2", username: "luis" },
+        ],
+        onSubmit,
+      })
+    );
+
+    expect(result.current.getFieldError("username")).toBe("");
+    expect(result.current.getFieldSuccess("username")).toBe(
+      USERNAME_AVAILABLE_MESSAGE
+    );
+
+    act(() => result.current.handleChange("username", "nuevo"));
+
+    expect(result.current.getFieldError("username")).toBe("");
+    expect(result.current.getFieldSuccess("username")).toBe(
+      USERNAME_AVAILABLE_MESSAGE
+    );
+
+    act(() => result.current.handleSubmit({ preventDefault: vi.fn() }));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0].username).toBe("NUEVO");
+  });
+
+  it("no marca error si en edicion se usa el username de otro usuario", () => {
+    const { result } = renderHook(() =>
+      useUserForm({
+        mode: USER_FORM_EDIT,
+        user: USERS_FIXTURE,
+        existingUsers: [
+          { id: "u1", username: "ana" },
+          { id: "u2", username: "luis" },
+        ],
+        onSubmit: vi.fn(),
+      })
+    );
+
+    act(() => result.current.handleChange("username", "luis"));
+
+    expect(result.current.getFieldError("username")).toBe(
+      USERNAME_TAKEN_MESSAGE
+    );
+    expect(result.current.getFieldSuccess("username")).toBe("");
   });
 });

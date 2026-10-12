@@ -18,11 +18,13 @@ export const PASSWORD_MATCH_MESSAGE = "Las contraseñas coinciden";
 
 const LIVE_FEEDBACK_FIELDS = new Set(["username", "email", "confirmPassword"]);
 
-const collectTakenValues = (existingUsers) => {
+const collectTakenValues = (existingUsers, currentUserId = null) => {
   const usernames = new Set();
   const emails = new Set();
 
   for (const item of Array.isArray(existingUsers) ? existingUsers : []) {
+    if (currentUserId && item?.id === currentUserId) continue;
+
     const username = String(item?.username || "")
       .trim()
       .toLowerCase();
@@ -71,7 +73,12 @@ const normalizeValues = (values) => ({
     .toLowerCase(),
 });
 
-export const validateUserForm = (values, mode, existingUsers = []) => {
+export const validateUserForm = (
+  values,
+  mode,
+  existingUsers = [],
+  currentUserId = null
+) => {
   const errors = {};
   const name = String(values.name || "").trim();
 
@@ -87,23 +94,26 @@ export const validateUserForm = (values, mode, existingUsers = []) => {
     errors.role = "Selecciona un rol.";
   }
 
+  const { usernames, emails } = collectTakenValues(
+    existingUsers,
+    currentUserId
+  );
+  const username = String(values.username || "").trim();
+
+  if (!username) {
+    errors.username = "El nombre de usuario es obligatorio.";
+  } else if (username.length < 3) {
+    errors.username = "Debe tener al menos 3 caracteres.";
+  } else if (username.length > USERNAME_MAX_LENGTH) {
+    errors.username = `No puede superar los ${USERNAME_MAX_LENGTH} caracteres.`;
+  } else if (!USERNAME_PATTERN.test(username)) {
+    errors.username =
+      "Solo puede contener letras, números, punto, guion y guion bajo.";
+  } else if (usernames.has(username.toLowerCase())) {
+    errors.username = USERNAME_TAKEN_MESSAGE;
+  }
+
   if (mode === USER_FORM_CREATE) {
-    const { usernames, emails } = collectTakenValues(existingUsers);
-    const username = String(values.username || "").trim();
-
-    if (!username) {
-      errors.username = "El nombre de usuario es obligatorio.";
-    } else if (username.length < 3) {
-      errors.username = "Debe tener al menos 3 caracteres.";
-    } else if (username.length > USERNAME_MAX_LENGTH) {
-      errors.username = `No puede superar los ${USERNAME_MAX_LENGTH} caracteres.`;
-    } else if (!USERNAME_PATTERN.test(username)) {
-      errors.username =
-        "Solo puede contener letras, números, punto, guion y guion bajo.";
-    } else if (usernames.has(username.toLowerCase())) {
-      errors.username = USERNAME_TAKEN_MESSAGE;
-    }
-
     const email = String(values.email || "").trim();
 
     if (!email) {
@@ -160,9 +170,11 @@ const useUserForm = ({
   const [touched, setTouched] = useState({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
+  const currentUserId = user?.id || null;
+
   const errors = useMemo(
-    () => validateUserForm(values, mode, existingUsers),
-    [values, mode, existingUsers]
+    () => validateUserForm(values, mode, existingUsers, currentUserId),
+    [values, mode, existingUsers, currentUserId]
   );
 
   const handleChange = (field, value) => {
@@ -186,7 +198,7 @@ const useUserForm = ({
   };
 
   const getFieldSuccess = (field) => {
-    if (field === "username" && mode === USER_FORM_CREATE) {
+    if (field === "username") {
       const username = String(values.username || "").trim();
 
       if (!username || errors.username) return "";

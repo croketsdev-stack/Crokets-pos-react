@@ -85,7 +85,7 @@ export const fetchRoles = async () => {
   };
 };
 
-export const updateUser = async ({ id, name, roleId }) => {
+export const updateUser = async ({ id, name, username, roleId }) => {
   if (!id) {
     return {
       success: false,
@@ -98,6 +98,10 @@ export const updateUser = async ({ id, name, roleId }) => {
 
   if (typeof name === "string") {
     payload.name = name.trim();
+  }
+
+  if (typeof username === "string") {
+    payload.username = username.trim().toUpperCase();
   }
 
   if (roleId) {

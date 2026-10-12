@@ -184,6 +184,7 @@ const useSettingsUsers = () => {
         const updateResult = await updateUser({
           id: formModal.user?.id,
           name: form.name,
+          username: form.username,
           roleId,
         });
 

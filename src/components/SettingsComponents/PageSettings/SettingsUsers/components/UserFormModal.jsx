@@ -7,7 +7,6 @@ import useUserForm, {
   USERNAME_MAX_LENGTH,
 } from "../hooks/useUserForm";
 import { ROLE_FORM_OPTIONS } from "../hooks/useSettingsUsers";
-import { toUpperText } from "../utils/usersFormatters";
 
 const COPY_FEEDBACK_TIMEOUT = 1500;
 
@@ -113,13 +112,6 @@ const UserFormModal = ({
           {isEdit ? (
             <dl className={styles.readonlyGrid}>
               <div className={styles.readonlyItem}>
-                <dt className={styles.readonlyLabel}>Usuario</dt>
-                <dd className={styles.readonlyValue}>
-                  {values.username ? `@${toUpperText(values.username)}` : "n/a"}
-                </dd>
-              </div>
-
-              <div className={styles.readonlyItem}>
                 <dt className={styles.readonlyLabel}>Correo electrónico</dt>
                 <dd className={styles.readonlyValue}>
                   {values.email || "Sin correo"}
@@ -185,59 +177,58 @@ const UserFormModal = ({
             ) : null}
           </div>
 
+          <div className={styles.formGroup}>
+            <label
+              htmlFor="settings-users-username"
+              className={styles.formLabel}
+            >
+              Usuario
+            </label>
+            <input
+              id="settings-users-username"
+              type="text"
+              maxLength={USERNAME_MAX_LENGTH}
+              className={[
+                styles.formInput,
+                styles.uppercaseInput,
+                usernameError
+                  ? styles.fieldInvalid
+                  : usernameSuccess
+                    ? styles.fieldValid
+                    : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+              value={values.username}
+              onChange={(event) =>
+                handleChange("username", event.target.value.toUpperCase())
+              }
+              onBlur={() => handleBlur("username")}
+              disabled={saving}
+              aria-invalid={usernameError ? "true" : undefined}
+              aria-describedby={
+                usernameError ? "settings-users-username-error" : undefined
+              }
+              autoComplete="off"
+            />
+            {usernameError ? (
+              <span
+                id="settings-users-username-error"
+                className={styles.fieldError}
+              >
+                {usernameError}
+              </span>
+            ) : usernameSuccess ? (
+              <span className={styles.fieldSuccess}>{usernameSuccess}</span>
+            ) : (
+              <span className={styles.fieldHint}>
+                Solo letras, números, punto, guion y guion bajo. Sin espacios.
+              </span>
+            )}
+          </div>
+
           {!isEdit ? (
             <>
-              <div className={styles.formGroup}>
-                <label
-                  htmlFor="settings-users-username"
-                  className={styles.formLabel}
-                >
-                  Usuario
-                </label>
-                <input
-                  id="settings-users-username"
-                  type="text"
-                  maxLength={USERNAME_MAX_LENGTH}
-                  className={[
-                    styles.formInput,
-                    styles.uppercaseInput,
-                    usernameError
-                      ? styles.fieldInvalid
-                      : usernameSuccess
-                        ? styles.fieldValid
-                        : "",
-                  ]
-                    .filter(Boolean)
-                    .join(" ")}
-                  value={values.username}
-                  onChange={(event) =>
-                    handleChange("username", event.target.value.toUpperCase())
-                  }
-                  onBlur={() => handleBlur("username")}
-                  disabled={saving}
-                  aria-invalid={usernameError ? "true" : undefined}
-                  aria-describedby={
-                    usernameError ? "settings-users-username-error" : undefined
-                  }
-                  autoComplete="off"
-                />
-                {usernameError ? (
-                  <span
-                    id="settings-users-username-error"
-                    className={styles.fieldError}
-                  >
-                    {usernameError}
-                  </span>
-                ) : usernameSuccess ? (
-                  <span className={styles.fieldSuccess}>{usernameSuccess}</span>
-                ) : (
-                  <span className={styles.fieldHint}>
-                    Solo letras, números, punto, guion y guion bajo. Sin
-                    espacios.
-                  </span>
-                )}
-              </div>
-
               <div className={styles.formGroup}>
                 <label
                   htmlFor="settings-users-email"

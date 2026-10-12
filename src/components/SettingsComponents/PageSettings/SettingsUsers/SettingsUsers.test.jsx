@@ -324,7 +324,7 @@ describe("SettingsUsers", () => {
     expect(usernameInput.value).toBe("CPEREZ");
   });
 
-  it("muestra los datos de solo lectura al editar", async () => {
+  it("permite editar el usuario y conserva correo e id en solo lectura", async () => {
     mockLoadSuccess();
 
     render(<SettingsUsers />);
@@ -336,10 +336,12 @@ describe("SettingsUsers", () => {
     );
 
     const dialog = screen.getByRole("dialog");
-    expect(within(dialog).getByText("@ANA")).toBeTruthy();
     expect(within(dialog).getByText("ana@crokets.test")).toBeTruthy();
     expect(within(dialog).getByText("u1")).toBeTruthy();
-    expect(dialog.querySelector("input#settings-users-username")).toBeNull();
+
+    const usernameInput = dialog.querySelector("input#settings-users-username");
+    expect(usernameInput).not.toBeNull();
+    expect(usernameInput.value).toBe("ana");
     expect(dialog.querySelector("input#settings-users-email")).toBeNull();
   });
 
@@ -376,6 +378,7 @@ describe("SettingsUsers", () => {
       expect(updateUser).toHaveBeenCalledWith({
         id: "u1",
         name: "ANA ACTUALIZADA",
+        username: "ANA",
         roleId: "role-admin",
       })
     );
@@ -383,6 +386,36 @@ describe("SettingsUsers", () => {
       expect(updateUserPassword).toHaveBeenCalledWith({
         id: "u1",
         password: "nuevaClave1",
+      })
+    );
+  });
+
+  it("permite cambiar el nombre de usuario al editar", async () => {
+    mockLoadSuccess();
+    updateUser.mockResolvedValue({ success: true, data: null, error: null });
+
+    render(<SettingsUsers />);
+
+    await screen.findByText("ANA TORRES");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Editar a Ana Torres" })
+    );
+
+    fireEvent.change(screen.getByLabelText("Usuario"), {
+      target: { value: "nueva" },
+    });
+
+    expect(screen.getByText("Nombre de usuario válido")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Guardar cambios" }));
+
+    await waitFor(() =>
+      expect(updateUser).toHaveBeenCalledWith({
+        id: "u1",
+        name: "ANA TORRES",
+        username: "NUEVA",
+        roleId: "role-admin",
       })
     );
   });
