@@ -230,12 +230,12 @@ export const updateUserPassword = async ({ id, password }) => {
 /**
  * Registra un usuario nuevo.
  *
- * La cuenta de autenticacion se crea con `auth.signUp`; si el proyecto exige
- * confirmacion por correo, no se devuelve sesion y el usuario queda pendiente
- * de confirmar. Como `signUp` puede reemplazar la sesion activa del
- * administrador cuando la confirmacion esta desactivada, se restaura la sesion
- * previa si la llamada devolvio una nueva. El perfil en `public.users` se
- * escribe despues con el id devuelto por Auth.
+ * La cuenta de autenticacion se crea con privilegios de servicio dentro de la
+ * edge function `admin-create-user`, que valida que quien invoca sea un
+ * administrador activo y confirma el correo automaticamente (`email_confirm`).
+ * Asi el administrador no pierde su sesion ni depende de la confirmacion por
+ * correo del nuevo usuario. El perfil en `public.users` se escribe en la misma
+ * funcion; si falla, la funcion elimina la cuenta de auth para evitar huerfanos.
  */
 export const createUser = async ({
   name,
@@ -249,8 +249,9 @@ export const createUser = async ({
     .trim()
     .toLowerCase();
   const cleanName = String(name || "").trim();
+  const cleanPassword = String(password || "");
 
-  if (!cleanUsername || !cleanEmail || !roleId || !password) {
+  if (!cleanUsername || !cleanEmail || !roleId || !cleanPassword) {
     return {
       success: false,
       data: null,
@@ -258,69 +259,30 @@ export const createUser = async ({
     };
   }
 
-  const { data: sessionData } = await supabase.auth.getSession();
-  const previousSession = sessionData?.session ?? null;
-
-  const { data, error } = await supabase.auth.signUp({
-    email: cleanEmail,
-    password,
-    options: { data: { username: cleanUsername, name: cleanName } },
+  const { data, error } = await supabase.functions.invoke("admin-create-user", {
+    body: {
+      name: cleanName,
+      username: cleanUsername,
+      email: cleanEmail,
+      roleId,
+      password: cleanPassword,
+    },
   });
 
-  if (error) {
-    console.error("Error creando la cuenta del usuario:", error);
+  if (error || data?.ok === false) {
+    console.error("Error creando el usuario:", error || data);
 
     return {
       success: false,
       data: null,
-      error: error.message || "No se pudo crear la cuenta del usuario.",
+      error: data?.message || error?.message || "No se pudo crear el usuario.",
     };
   }
-
-  if (previousSession && data?.session) {
-    await supabase.auth.setSession({
-      access_token: previousSession.access_token,
-      refresh_token: previousSession.refresh_token,
-    });
-  }
-
-  const authUserId = data?.user?.id;
-
-  if (!authUserId) {
-    return {
-      success: false,
-      data: null,
-      error: "No se recibió el identificador del usuario creado.",
-    };
-  }
-
-  const { error: profileError } = await supabase.from("users").insert({
-    id: authUserId,
-    name: cleanName,
-    username: cleanUsername,
-    email: cleanEmail,
-    role_id: roleId,
-    status: true,
-  });
-
-  if (profileError) {
-    console.error("Error creando el perfil del usuario:", profileError);
-
-    return {
-      success: false,
-      data: null,
-      error:
-        profileError.message ||
-        "La cuenta se creó pero no se pudo guardar el perfil.",
-    };
-  }
-
-  const requiresConfirmation = !data?.session;
 
   return {
     success: true,
-    data: { id: authUserId },
-    requiresConfirmation,
+    data: data?.data ?? null,
+    requiresConfirmation: false,
     error: null,
   };
 };

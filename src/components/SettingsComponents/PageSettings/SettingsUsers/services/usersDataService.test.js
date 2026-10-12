@@ -425,17 +425,11 @@ describe("usersDataService", () => {
   });
 
   describe("createUser", () => {
-    beforeEach(() => {
-      supabase.auth.getSession.mockResolvedValue({ data: { session: null } });
-    });
-
-    it("crea la cuenta y el perfil, indicando confirmacion requerida", async () => {
-      supabase.auth.signUp.mockResolvedValue({
-        data: { user: { id: "new-1" }, session: null },
+    it("invoca la edge function admin-create-user sin exigir confirmacion", async () => {
+      supabase.functions.invoke.mockResolvedValue({
+        data: { ok: true, data: { id: "new-1" } },
         error: null,
       });
-      const insert = vi.fn().mockResolvedValue({ error: null });
-      supabase.from.mockReturnValue({ insert });
 
       const result = await createUser({
         name: "Nuevo Usuario",
@@ -445,60 +439,73 @@ describe("usersDataService", () => {
         password: "secreto123",
       });
 
-      expect(insert).toHaveBeenCalledWith({
-        id: "new-1",
-        name: "Nuevo Usuario",
-        username: "nuevo",
-        email: "nuevo@crokets.test",
-        role_id: "role-cashier",
-        status: true,
-      });
-      expect(result.success).toBe(true);
-      expect(result.requiresConfirmation).toBe(true);
-      expect(supabase.auth.setSession).not.toHaveBeenCalled();
-    });
-
-    it("restaura la sesion previa si el registro devolvio una nueva", async () => {
-      supabase.auth.getSession.mockResolvedValue({
-        data: { session: { access_token: "a", refresh_token: "r" } },
-      });
-      supabase.auth.signUp.mockResolvedValue({
-        data: { user: { id: "new-2" }, session: { access_token: "n" } },
+      expect(supabase.functions.invoke).toHaveBeenCalledWith(
+        "admin-create-user",
+        {
+          body: {
+            name: "Nuevo Usuario",
+            username: "nuevo",
+            email: "nuevo@crokets.test",
+            roleId: "role-cashier",
+            password: "secreto123",
+          },
+        }
+      );
+      expect(result).toEqual({
+        success: true,
+        data: { id: "new-1" },
+        requiresConfirmation: false,
         error: null,
       });
-      supabase.auth.setSession.mockResolvedValue({ error: null });
-      const insert = vi.fn().mockResolvedValue({ error: null });
-      supabase.from.mockReturnValue({ insert });
-
-      const result = await createUser({
-        name: "Otro",
-        username: "otro",
-        email: "otro@crokets.test",
-        roleId: "role-admin",
-        password: "secreto123",
-      });
-
-      expect(supabase.auth.setSession).toHaveBeenCalledWith({
-        access_token: "a",
-        refresh_token: "r",
-      });
-      expect(result.requiresConfirmation).toBe(false);
     });
 
     it("rechaza la creacion sin los datos obligatorios", async () => {
       const result = await createUser({ name: "X", username: "x" });
 
       expect(result.success).toBe(false);
-      expect(supabase.auth.signUp).not.toHaveBeenCalled();
+      expect(supabase.functions.invoke).not.toHaveBeenCalled();
     });
 
-    it("propaga el error de signUp", async () => {
+    it("rechaza la creacion sin contrasena", async () => {
+      const result = await createUser({
+        name: "X",
+        username: "x",
+        email: "x@crokets.test",
+        roleId: "role-admin",
+      });
+
+      expect(result.success).toBe(false);
+      expect(supabase.functions.invoke).not.toHaveBeenCalled();
+    });
+
+    it("propaga el error de la invocacion", async () => {
       const consoleError = vi
         .spyOn(console, "error")
         .mockImplementation(() => {});
-      supabase.auth.signUp.mockResolvedValue({
-        data: { user: null, session: null },
-        error: { message: "correo ya registrado" },
+      supabase.functions.invoke.mockResolvedValue({
+        data: null,
+        error: { message: "fallo de red" },
+      });
+
+      const result = await createUser({
+        name: "X",
+        username: "x",
+        email: "x@crokets.test",
+        roleId: "role-admin",
+        password: "secreto123",
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.error).toBe("fallo de red");
+      expect(consoleError).toHaveBeenCalled();
+
+      consoleError.mockRestore();
+    });
+
+    it("propaga el rechazo de la edge function", async () => {
+      supabase.functions.invoke.mockResolvedValue({
+        data: { ok: false, message: "correo ya registrado" },
+        error: null,
       });
 
       const result = await createUser({
@@ -511,33 +518,6 @@ describe("usersDataService", () => {
 
       expect(result.success).toBe(false);
       expect(result.error).toBe("correo ya registrado");
-      expect(consoleError).toHaveBeenCalled();
-    });
-
-    it("reporta error si no se puede guardar el perfil", async () => {
-      const consoleError = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => {});
-      supabase.auth.signUp.mockResolvedValue({
-        data: { user: { id: "new-2" }, session: null },
-        error: null,
-      });
-      const insert = vi.fn().mockResolvedValue({
-        error: { message: "perfil duplicado" },
-      });
-      supabase.from.mockReturnValue({ insert });
-
-      const result = await createUser({
-        name: "X",
-        username: "x",
-        email: "x@crokets.test",
-        roleId: "role-admin",
-        password: "secreto123",
-      });
-
-      expect(result.success).toBe(false);
-      expect(result.error).toBe("perfil duplicado");
-      expect(consoleError).toHaveBeenCalled();
     });
   });
 });

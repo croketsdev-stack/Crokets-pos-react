@@ -15,3 +15,9 @@ enabled = true
 verify_jwt = true
 import_map = "./functions/admin-reset-user-password/deno.json"
 entrypoint = "./functions/admin-reset-user-password/index.ts"
+
+[functions.admin-create-user]
+enabled = true
+verify_jwt = true
+import_map = "./functions/admin-create-user/deno.json"
+entrypoint = "./functions/admin-create-user/index.ts"
