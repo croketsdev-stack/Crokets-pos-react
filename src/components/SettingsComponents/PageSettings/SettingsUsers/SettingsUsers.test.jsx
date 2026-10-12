@@ -235,13 +235,32 @@ describe("SettingsUsers", () => {
 
     await waitFor(() =>
       expect(createUser).toHaveBeenCalledWith({
-        name: "Nuevo Cajero",
-        username: "nuevo",
+        name: "NUEVO CAJERO",
+        username: "NUEVO",
         email: "nuevo@crokets.test",
         roleId: "role-cashier",
         password: "secreto123",
       })
     );
+  });
+
+  it("convierte a mayusculas el nombre y el usuario mientras se escriben", async () => {
+    mockLoadSuccess();
+
+    render(<SettingsUsers />);
+
+    await screen.findByText("ANA TORRES");
+
+    fireEvent.click(screen.getByRole("button", { name: "Nuevo Usuario" }));
+
+    const nameInput = screen.getByLabelText("Nombre completo");
+    const usernameInput = screen.getByLabelText("Usuario");
+
+    fireEvent.change(nameInput, { target: { value: "carlos perez" } });
+    fireEvent.change(usernameInput, { target: { value: "cperez" } });
+
+    expect(nameInput.value).toBe("CARLOS PEREZ");
+    expect(usernameInput.value).toBe("CPEREZ");
   });
 
   it("muestra los datos de solo lectura al editar", async () => {
@@ -256,7 +275,7 @@ describe("SettingsUsers", () => {
     );
 
     const dialog = screen.getByRole("dialog");
-    expect(within(dialog).getByText("@ana")).toBeTruthy();
+    expect(within(dialog).getByText("@ANA")).toBeTruthy();
     expect(within(dialog).getByText("ana@crokets.test")).toBeTruthy();
     expect(within(dialog).getByText("u1")).toBeTruthy();
     expect(dialog.querySelector("input#settings-users-username")).toBeNull();
@@ -295,7 +314,7 @@ describe("SettingsUsers", () => {
     await waitFor(() =>
       expect(updateUser).toHaveBeenCalledWith({
         id: "u1",
-        name: "Ana Actualizada",
+        name: "ANA ACTUALIZADA",
         roleId: "role-admin",
       })
     );

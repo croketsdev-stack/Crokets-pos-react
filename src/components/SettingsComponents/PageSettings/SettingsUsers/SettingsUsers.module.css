@@ -697,6 +697,10 @@
   outline-offset: 1px;
 }
 
+.uppercaseInput {
+  text-transform: uppercase;
+}
+
 .fieldInvalid {
   border-color: #dc2626;
 }

@@ -7,6 +7,7 @@ import useUserForm, {
   USERNAME_MAX_LENGTH,
 } from "../hooks/useUserForm";
 import { ROLE_FORM_OPTIONS } from "../hooks/useSettingsUsers";
+import { toUpperText } from "../utils/usersFormatters";
 
 const COPY_FEEDBACK_TIMEOUT = 1500;
 
@@ -103,7 +104,7 @@ const UserFormModal = ({
               <div className={styles.readonlyItem}>
                 <dt className={styles.readonlyLabel}>Usuario</dt>
                 <dd className={styles.readonlyValue}>
-                  {values.username ? `@${values.username}` : "n/a"}
+                  {values.username ? `@${toUpperText(values.username)}` : "n/a"}
                 </dd>
               </div>
 
@@ -146,12 +147,15 @@ const UserFormModal = ({
               maxLength={NAME_MAX_LENGTH}
               className={[
                 styles.formInput,
+                styles.uppercaseInput,
                 nameError ? styles.fieldInvalid : "",
               ]
                 .filter(Boolean)
                 .join(" ")}
               value={values.name}
-              onChange={(event) => handleChange("name", event.target.value)}
+              onChange={(event) =>
+                handleChange("name", event.target.value.toUpperCase())
+              }
               onBlur={() => handleBlur("name")}
               disabled={saving}
               aria-invalid={nameError ? "true" : undefined}
@@ -184,13 +188,14 @@ const UserFormModal = ({
                   maxLength={USERNAME_MAX_LENGTH}
                   className={[
                     styles.formInput,
+                    styles.uppercaseInput,
                     usernameError ? styles.fieldInvalid : "",
                   ]
                     .filter(Boolean)
                     .join(" ")}
                   value={values.username}
                   onChange={(event) =>
-                    handleChange("username", event.target.value)
+                    handleChange("username", event.target.value.toUpperCase())
                   }
                   onBlur={() => handleBlur("username")}
                   disabled={saving}

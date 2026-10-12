@@ -33,8 +33,12 @@ const buildInitialValues = (mode, user) => ({
 
 const normalizeValues = (values) => ({
   ...values,
-  name: String(values.name || "").trim(),
-  username: String(values.username || "").trim(),
+  name: String(values.name || "")
+    .trim()
+    .toUpperCase(),
+  username: String(values.username || "")
+    .trim()
+    .toUpperCase(),
   email: String(values.email || "")
     .trim()
     .toLowerCase(),
