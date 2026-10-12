@@ -10,6 +10,33 @@ export const NAME_MAX_LENGTH = 100;
 export const USERNAME_MAX_LENGTH = 50;
 export const PASSWORD_MIN_LENGTH = 6;
 
+export const USERNAME_TAKEN_MESSAGE = "Nombre de usuario no disponible";
+export const USERNAME_AVAILABLE_MESSAGE = "Nombre de usuario válido";
+export const EMAIL_TAKEN_MESSAGE = "Correo electrónico no disponible";
+export const EMAIL_AVAILABLE_MESSAGE = "Correo electrónico válido";
+export const PASSWORD_MATCH_MESSAGE = "Las contraseñas coinciden";
+
+const LIVE_FEEDBACK_FIELDS = new Set(["username", "email", "confirmPassword"]);
+
+const collectTakenValues = (existingUsers) => {
+  const usernames = new Set();
+  const emails = new Set();
+
+  for (const item of Array.isArray(existingUsers) ? existingUsers : []) {
+    const username = String(item?.username || "")
+      .trim()
+      .toLowerCase();
+    const email = String(item?.email || "")
+      .trim()
+      .toLowerCase();
+
+    if (username) usernames.add(username);
+    if (email) emails.add(email);
+  }
+
+  return { usernames, emails };
+};
+
 const resolveRoleName = (roleName) => {
   const normalized = String(roleName || "")
     .trim()
@@ -44,7 +71,7 @@ const normalizeValues = (values) => ({
     .toLowerCase(),
 });
 
-export const validateUserForm = (values, mode) => {
+export const validateUserForm = (values, mode, existingUsers = []) => {
   const errors = {};
   const name = String(values.name || "").trim();
 
@@ -61,6 +88,7 @@ export const validateUserForm = (values, mode) => {
   }
 
   if (mode === USER_FORM_CREATE) {
+    const { usernames, emails } = collectTakenValues(existingUsers);
     const username = String(values.username || "").trim();
 
     if (!username) {
@@ -71,7 +99,9 @@ export const validateUserForm = (values, mode) => {
       errors.username = `No puede superar los ${USERNAME_MAX_LENGTH} caracteres.`;
     } else if (!USERNAME_PATTERN.test(username)) {
       errors.username =
-        "Solo puede contener letras, números, guiones y guiones bajos.";
+        "Solo puede contener letras, números, punto, guion y guion bajo.";
+    } else if (usernames.has(username.toLowerCase())) {
+      errors.username = USERNAME_TAKEN_MESSAGE;
     }
 
     const email = String(values.email || "").trim();
@@ -79,7 +109,9 @@ export const validateUserForm = (values, mode) => {
     if (!email) {
       errors.email = "El correo es obligatorio.";
     } else if (!EMAIL_PATTERN.test(email)) {
-      errors.email = "Ingresa un correo válido.";
+      errors.email = "Correo electrónico inválido.";
+    } else if (emails.has(email.toLowerCase())) {
+      errors.email = EMAIL_TAKEN_MESSAGE;
     }
 
     if (!values.password) {
@@ -118,12 +150,20 @@ export const validateUserForm = (values, mode) => {
  * enviar. Se usa una `key` en el componente para reinitializar el formulario
  * cuando cambia el usuario objetivo.
  */
-const useUserForm = ({ mode = USER_FORM_CREATE, user = null, onSubmit }) => {
+const useUserForm = ({
+  mode = USER_FORM_CREATE,
+  user = null,
+  existingUsers = [],
+  onSubmit,
+}) => {
   const [values, setValues] = useState(() => buildInitialValues(mode, user));
   const [touched, setTouched] = useState({});
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
-  const errors = useMemo(() => validateUserForm(values, mode), [values, mode]);
+  const errors = useMemo(
+    () => validateUserForm(values, mode, existingUsers),
+    [values, mode, existingUsers]
+  );
 
   const handleChange = (field, value) => {
     setValues((prev) => ({ ...prev, [field]: value }));
@@ -134,9 +174,46 @@ const useUserForm = ({ mode = USER_FORM_CREATE, user = null, onSubmit }) => {
   };
 
   const getFieldError = (field) => {
+    if (LIVE_FEEDBACK_FIELDS.has(field)) {
+      const rawValue = String(values[field] || "").trim();
+
+      if (rawValue && errors[field]) return errors[field];
+    }
+
     if (!touched[field] && !submitAttempted) return "";
 
     return errors[field] || "";
+  };
+
+  const getFieldSuccess = (field) => {
+    if (field === "username" && mode === USER_FORM_CREATE) {
+      const username = String(values.username || "").trim();
+
+      if (!username || errors.username) return "";
+
+      return USERNAME_AVAILABLE_MESSAGE;
+    }
+
+    if (field === "email" && mode === USER_FORM_CREATE) {
+      const email = String(values.email || "").trim();
+
+      if (!email || errors.email) return "";
+
+      return EMAIL_AVAILABLE_MESSAGE;
+    }
+
+    if (field === "confirmPassword") {
+      const password = String(values.password || "");
+      const confirmPassword = String(values.confirmPassword || "");
+
+      if (errors.password || errors.confirmPassword) return "";
+      if (password.length < PASSWORD_MIN_LENGTH || !confirmPassword) return "";
+      if (password !== confirmPassword) return "";
+
+      return PASSWORD_MATCH_MESSAGE;
+    }
+
+    return "";
   };
 
   const handleSubmit = (event) => {
@@ -151,6 +228,7 @@ const useUserForm = ({ mode = USER_FORM_CREATE, user = null, onSubmit }) => {
   return {
     errors,
     getFieldError,
+    getFieldSuccess,
     handleBlur,
     handleChange,
     handleSubmit,

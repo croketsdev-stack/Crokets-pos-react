@@ -1,4 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 import {
   render,
   screen,
@@ -7,6 +9,15 @@ import {
   within,
 } from "@testing-library/react";
 import SettingsUsers from "./SettingsUsers";
+import styles from "./SettingsUsers.module.css";
+
+const stylesSource = readFileSync(
+  join(
+    process.cwd(),
+    "src/components/SettingsComponents/PageSettings/SettingsUsers/SettingsUsers.module.css"
+  ),
+  "utf8"
+);
 
 const {
   fetchUsers,
@@ -491,5 +502,94 @@ describe("SettingsUsers", () => {
     expect(
       Array.from(roleSelect.options).map((option) => option.textContent)
     ).toEqual(["Administrador", "Cajero"]);
+  });
+
+  it("muestra feedback en vivo de disponibilidad de usuario y correo", async () => {
+    mockLoadSuccess();
+
+    render(<SettingsUsers />);
+
+    await screen.findByText("ANA TORRES");
+
+    fireEvent.click(screen.getByRole("button", { name: "Nuevo Usuario" }));
+
+    const usernameInput = screen.getByLabelText("Usuario");
+    const emailInput = screen.getByLabelText("Correo electrónico");
+
+    fireEvent.change(usernameInput, { target: { value: "nuevo" } });
+
+    expect(screen.getByText("Nombre de usuario válido")).toBeTruthy();
+    expect(usernameInput.getAttribute("aria-invalid")).toBeNull();
+    expect(usernameInput.className).toContain(styles.fieldValid);
+
+    fireEvent.change(usernameInput, { target: { value: "ana" } });
+
+    expect(screen.getByText("Nombre de usuario no disponible")).toBeTruthy();
+    expect(usernameInput.getAttribute("aria-invalid")).toBe("true");
+
+    fireEvent.change(emailInput, { target: { value: "nuevo@crokets.test" } });
+
+    expect(screen.getByText("Correo electrónico válido")).toBeTruthy();
+
+    fireEvent.change(emailInput, { target: { value: "ana@crokets.test" } });
+
+    expect(screen.getByText("Correo electrónico no disponible")).toBeTruthy();
+
+    fireEvent.change(emailInput, { target: { value: "no-es-correo" } });
+
+    expect(screen.getByText("Correo electrónico inválido.")).toBeTruthy();
+  });
+
+  it("confirma en verde las contrasenas coincidentes y marca el desajuste", async () => {
+    mockLoadSuccess();
+
+    render(<SettingsUsers />);
+
+    await screen.findByText("ANA TORRES");
+
+    fireEvent.click(screen.getByRole("button", { name: "Nuevo Usuario" }));
+
+    const passwordInput = screen.getByLabelText("Contraseña inicial");
+    const confirmInput = screen.getByLabelText("Confirmar contraseña");
+
+    fireEvent.change(passwordInput, { target: { value: "secreto123" } });
+    fireEvent.change(confirmInput, { target: { value: "secreto123" } });
+
+    expect(screen.getByText("Las contraseñas coinciden")).toBeTruthy();
+    expect(confirmInput.className).toContain(styles.fieldValid);
+
+    fireEvent.change(confirmInput, { target: { value: "otraClave1" } });
+
+    expect(screen.queryByText("Las contraseñas coinciden")).toBeNull();
+    expect(screen.getByText("Las contraseñas no coinciden.")).toBeTruthy();
+  });
+
+  it("aplica las clases de estilo a los iconos de los botones", async () => {
+    mockLoadSuccess();
+
+    render(<SettingsUsers />);
+
+    await screen.findByText("ANA TORRES");
+
+    const reloadButton = screen.getByRole("button", { name: "Recargar" });
+    const newUserButton = screen.getByRole("button", { name: "Nuevo Usuario" });
+
+    expect(reloadButton.className).toContain(styles.secondaryButton);
+    expect(newUserButton.className).toContain(styles.primaryButton);
+
+    const reloadIcon = reloadButton.querySelector("img");
+    const newUserIcon = newUserButton.querySelector("img");
+
+    expect(reloadIcon.className).toBe(styles.buttonIcon);
+    expect(newUserIcon.className).toBe(styles.buttonIcon);
+  });
+
+  it("define los filtros de color de los iconos de accion", () => {
+    expect(stylesSource).toContain(".primaryButton .buttonIcon");
+    expect(stylesSource).toContain(".secondaryButton .buttonIcon");
+    expect(stylesSource).toContain("brightness(0) invert(1)");
+    expect(stylesSource).toContain(
+      "invert(31%) sepia(58%) saturate(1242%) hue-rotate(157deg)"
+    );
   });
 });

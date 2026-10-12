@@ -269,6 +269,14 @@
   flex-shrink: 0;
 }
 
+.primaryButton .buttonIcon {
+  filter: brightness(0) invert(1);
+}
+
+.secondaryButton .buttonIcon {
+  filter: invert(31%) sepia(58%) saturate(1242%) hue-rotate(157deg);
+}
+
 .visuallyHidden {
   position: absolute;
   width: 1px;
@@ -705,10 +713,22 @@
   border-color: #dc2626;
 }
 
+.fieldValid {
+  border-color: #22c55e;
+}
+
 .fieldError {
   color: #b91c1c;
   font-size: 0.75rem;
   font-weight: 600;
+}
+
+.fieldSuccess {
+  display: block;
+  font-size: 0.78rem;
+  color: #16a34a;
+  margin-top: 0.35rem;
+  font-weight: 500;
 }
 
 .fieldHint {

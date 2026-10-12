@@ -17,14 +17,21 @@ const UserFormModal = ({
   user,
   saving,
   isCurrentUser,
+  existingUsers,
   onSubmit,
   onClose,
 }) => {
   const isEdit = mode === USER_FORM_EDIT;
   const isRoleLocked = isEdit && isCurrentUser;
 
-  const { values, getFieldError, handleBlur, handleChange, handleSubmit } =
-    useUserForm({ mode, user, onSubmit });
+  const {
+    values,
+    getFieldError,
+    getFieldSuccess,
+    handleBlur,
+    handleChange,
+    handleSubmit,
+  } = useUserForm({ mode, user, existingUsers, onSubmit });
 
   const [idCopied, setIdCopied] = useState(false);
 
@@ -64,10 +71,13 @@ const UserFormModal = ({
 
   const nameError = getFieldError("name");
   const usernameError = getFieldError("username");
+  const usernameSuccess = getFieldSuccess("username");
   const emailError = getFieldError("email");
+  const emailSuccess = getFieldSuccess("email");
   const roleError = getFieldError("role");
   const passwordError = getFieldError("password");
   const confirmPasswordError = getFieldError("confirmPassword");
+  const confirmPasswordSuccess = getFieldSuccess("confirmPassword");
 
   const passwordLabel = isEdit ? "Nueva contraseña" : "Contraseña inicial";
   const confirmPasswordLabel = isEdit
@@ -191,7 +201,11 @@ const UserFormModal = ({
                   className={[
                     styles.formInput,
                     styles.uppercaseInput,
-                    usernameError ? styles.fieldInvalid : "",
+                    usernameError
+                      ? styles.fieldInvalid
+                      : usernameSuccess
+                        ? styles.fieldValid
+                        : "",
                   ]
                     .filter(Boolean)
                     .join(" ")}
@@ -214,6 +228,8 @@ const UserFormModal = ({
                   >
                     {usernameError}
                   </span>
+                ) : usernameSuccess ? (
+                  <span className={styles.fieldSuccess}>{usernameSuccess}</span>
                 ) : (
                   <span className={styles.fieldHint}>
                     Solo letras, números, punto, guion y guion bajo. Sin
@@ -234,7 +250,11 @@ const UserFormModal = ({
                   type="email"
                   className={[
                     styles.formInput,
-                    emailError ? styles.fieldInvalid : "",
+                    emailError
+                      ? styles.fieldInvalid
+                      : emailSuccess
+                        ? styles.fieldValid
+                        : "",
                   ]
                     .filter(Boolean)
                     .join(" ")}
@@ -257,6 +277,8 @@ const UserFormModal = ({
                   >
                     {emailError}
                   </span>
+                ) : emailSuccess ? (
+                  <span className={styles.fieldSuccess}>{emailSuccess}</span>
                 ) : null}
               </div>
             </>
@@ -357,7 +379,11 @@ const UserFormModal = ({
               type="password"
               className={[
                 styles.formInput,
-                confirmPasswordError ? styles.fieldInvalid : "",
+                confirmPasswordError
+                  ? styles.fieldInvalid
+                  : confirmPasswordSuccess
+                    ? styles.fieldValid
+                    : "",
               ]
                 .filter(Boolean)
                 .join(" ")}
@@ -381,6 +407,10 @@ const UserFormModal = ({
                 className={styles.fieldError}
               >
                 {confirmPasswordError}
+              </span>
+            ) : confirmPasswordSuccess ? (
+              <span className={styles.fieldSuccess}>
+                {confirmPasswordSuccess}
               </span>
             ) : null}
           </div>
