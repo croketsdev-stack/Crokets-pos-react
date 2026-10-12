@@ -246,6 +246,54 @@ describe("SettingsUsers", () => {
     );
   });
 
+  it("marca los campos vacios como invalidos y asocia sus mensajes de error", async () => {
+    mockLoadSuccess();
+
+    render(<SettingsUsers />);
+
+    await screen.findByText("ANA TORRES");
+
+    fireEvent.click(screen.getByRole("button", { name: "Nuevo Usuario" }));
+    fireEvent.click(screen.getByRole("button", { name: "Crear usuario" }));
+
+    const fieldErrors = [
+      {
+        input: screen.getByLabelText("Nombre completo"),
+        inputId: "settings-users-name",
+        errorId: "settings-users-name-error",
+        message: "El nombre completo es obligatorio.",
+      },
+      {
+        input: screen.getByLabelText("Usuario"),
+        inputId: "settings-users-username",
+        errorId: "settings-users-username-error",
+        message: "El nombre de usuario es obligatorio.",
+      },
+      {
+        input: screen.getByLabelText("Correo electrónico"),
+        inputId: "settings-users-email",
+        errorId: "settings-users-email-error",
+        message: "El correo es obligatorio.",
+      },
+      {
+        input: screen.getByLabelText("Contraseña inicial"),
+        inputId: "settings-users-password",
+        errorId: "settings-users-password-error",
+        message: "La contraseña es obligatoria.",
+      },
+    ];
+
+    fieldErrors.forEach(({ input, inputId, errorId, message }) => {
+      expect(input.getAttribute("id")).toBe(inputId);
+      expect(input.getAttribute("aria-invalid")).toBe("true");
+      expect(input.getAttribute("aria-describedby")).toBe(errorId);
+
+      const errorNode = document.getElementById(errorId);
+      expect(errorNode).not.toBeNull();
+      expect(errorNode.textContent).toBe(message);
+    });
+  });
+
   it("convierte a mayusculas el nombre y el usuario mientras se escriben", async () => {
     mockLoadSuccess();
 

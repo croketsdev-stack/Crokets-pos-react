@@ -65,6 +65,7 @@ const UserFormModal = ({
   const nameError = getFieldError("name");
   const usernameError = getFieldError("username");
   const emailError = getFieldError("email");
+  const roleError = getFieldError("role");
   const passwordError = getFieldError("password");
   const confirmPasswordError = getFieldError("confirmPassword");
 
@@ -153,6 +154,7 @@ const UserFormModal = ({
                 .filter(Boolean)
                 .join(" ")}
               value={values.name}
+              autoFocus
               onChange={(event) =>
                 handleChange("name", event.target.value.toUpperCase())
               }
@@ -199,10 +201,19 @@ const UserFormModal = ({
                   }
                   onBlur={() => handleBlur("username")}
                   disabled={saving}
+                  aria-invalid={usernameError ? "true" : undefined}
+                  aria-describedby={
+                    usernameError ? "settings-users-username-error" : undefined
+                  }
                   autoComplete="off"
                 />
                 {usernameError ? (
-                  <span className={styles.fieldError}>{usernameError}</span>
+                  <span
+                    id="settings-users-username-error"
+                    className={styles.fieldError}
+                  >
+                    {usernameError}
+                  </span>
                 ) : (
                   <span className={styles.fieldHint}>
                     Solo letras, números, punto, guion y guion bajo. Sin
@@ -233,10 +244,19 @@ const UserFormModal = ({
                   }
                   onBlur={() => handleBlur("email")}
                   disabled={saving}
+                  aria-invalid={emailError ? "true" : undefined}
+                  aria-describedby={
+                    emailError ? "settings-users-email-error" : undefined
+                  }
                   autoComplete="off"
                 />
                 {emailError ? (
-                  <span className={styles.fieldError}>{emailError}</span>
+                  <span
+                    id="settings-users-email-error"
+                    className={styles.fieldError}
+                  >
+                    {emailError}
+                  </span>
                 ) : null}
               </div>
             </>
@@ -251,10 +271,19 @@ const UserFormModal = ({
             </label>
             <select
               id="settings-users-form-role"
-              className={styles.formSelect}
+              className={[
+                styles.formSelect,
+                roleError ? styles.fieldInvalid : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
               value={values.role}
               onChange={(event) => handleChange("role", event.target.value)}
               disabled={saving || isRoleLocked}
+              aria-invalid={roleError ? "true" : undefined}
+              aria-describedby={
+                roleError ? "settings-users-role-error" : undefined
+              }
             >
               {ROLE_FORM_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -265,6 +294,14 @@ const UserFormModal = ({
             {isRoleLocked ? (
               <span className={styles.fieldHint}>
                 No puedes cambiar tu propio rol.
+              </span>
+            ) : null}
+            {roleError ? (
+              <span
+                id="settings-users-role-error"
+                className={styles.fieldError}
+              >
+                {roleError}
               </span>
             ) : null}
           </div>
@@ -290,10 +327,19 @@ const UserFormModal = ({
               onChange={(event) => handleChange("password", event.target.value)}
               onBlur={() => handleBlur("password")}
               disabled={saving}
+              aria-invalid={passwordError ? "true" : undefined}
+              aria-describedby={
+                passwordError ? "settings-users-password-error" : undefined
+              }
               autoComplete="new-password"
             />
             {passwordError ? (
-              <span className={styles.fieldError}>{passwordError}</span>
+              <span
+                id="settings-users-password-error"
+                className={styles.fieldError}
+              >
+                {passwordError}
+              </span>
             ) : (
               <span className={styles.fieldHint}>{passwordHint}</span>
             )}
@@ -321,10 +367,21 @@ const UserFormModal = ({
               }
               onBlur={() => handleBlur("confirmPassword")}
               disabled={saving}
+              aria-invalid={confirmPasswordError ? "true" : undefined}
+              aria-describedby={
+                confirmPasswordError
+                  ? "settings-users-confirm-password-error"
+                  : undefined
+              }
               autoComplete="off"
             />
             {confirmPasswordError ? (
-              <span className={styles.fieldError}>{confirmPasswordError}</span>
+              <span
+                id="settings-users-confirm-password-error"
+                className={styles.fieldError}
+              >
+                {confirmPasswordError}
+              </span>
             ) : null}
           </div>
 
