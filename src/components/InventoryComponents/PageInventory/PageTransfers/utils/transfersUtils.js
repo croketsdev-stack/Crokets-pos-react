@@ -167,20 +167,6 @@ const parseTransferNotesPayload = (value) => {
   }
 };
 
-export const buildTransferNotesPayload = ({ noteText = "", metadata = {} }) => {
-  const normalizedNoteText = normalizeText(noteText);
-  const normalizedMetadata =
-    metadata && typeof metadata === "object" ? metadata : {};
-
-  if (Object.keys(normalizedMetadata).length === 0) {
-    return normalizedNoteText;
-  }
-
-  return `${normalizedNoteText}${TRANSFER_META_SEPARATOR}${JSON.stringify(
-    normalizedMetadata
-  )}`.trim();
-};
-
 const getItemOutcome = (metadata = {}, productId = "") => {
   const itemOutcomes = metadata?.itemOutcomes;
 

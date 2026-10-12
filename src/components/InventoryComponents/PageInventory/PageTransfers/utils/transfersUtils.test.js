@@ -2,7 +2,6 @@ import { describe, it, expect } from "vitest";
 
 import {
   parseTransferDate,
-  buildTransferNotesPayload,
   createTransferFolio,
   normalizeTransferOrder,
   formatTransferDateTime,
@@ -138,30 +137,6 @@ describe("transfersUtils", () => {
       expect(totals.receivedUnits).toBe(0);
       expect(totals.returnedUnits).toBe(0);
       expect(totals.lineCount).toBe(0);
-    });
-  });
-
-  describe("buildTransferNotesPayload", () => {
-    it("concatena nota libre + separador + JSON de metadatos cuando metadata tiene keys", () => {
-      const result = buildTransferNotesPayload({
-        noteText: "Pedido urgente para fin de semana",
-        metadata: { folio: "TR2609211234ABCD" },
-      });
-
-      expect(result.startsWith("Pedido urgente para fin de semana")).toBe(true);
-      expect(result.includes("##TRANSFER_META##")).toBe(true);
-      const metaPart = result.split("##TRANSFER_META##")[1];
-      const parsed = JSON.parse(metaPart);
-      expect(parsed.folio).toBe("TR2609211234ABCD");
-    });
-
-    it("metadata vacío NO agrega separador (menos ruido en storage)", () => {
-      const result = buildTransferNotesPayload({
-        noteText: "solo nota",
-        metadata: {},
-      });
-      expect(result.includes("##TRANSFER_META##")).toBe(false);
-      expect(result).toBe("solo nota");
     });
   });
 
