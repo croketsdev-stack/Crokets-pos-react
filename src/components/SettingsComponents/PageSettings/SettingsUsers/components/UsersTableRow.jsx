@@ -3,6 +3,7 @@ import pencilIcon from "../../../../../assets/icons/pencil-solid-full.svg";
 import lockIcon from "../../../../../assets/icons/lock-solid-full.svg";
 import circleCheckIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
 import {
+  buildUserSecondaryLine,
   formatUserDate,
   getRoleBadgeClass,
   getRoleLabel,
@@ -10,21 +11,16 @@ import {
   getStatusLabel,
   getUserDisplayName,
   getUserInitials,
+  toUpperText,
 } from "../utils/usersFormatters";
 
 const joinClassNames = (...names) => names.filter(Boolean).join(" ");
-
-const buildSecondaryLine = (user) => {
-  const handle = user.username ? `@${user.username}` : "Sin usuario";
-  const email = user.email || "Sin correo";
-
-  return `${handle} · ${email}`;
-};
 
 const UsersTableRow = ({ user, currentUserId, onEdit, onToggleStatus }) => {
   const isActive = user.status === true;
   const isCurrentUser = user.id === currentUserId;
   const displayName = getUserDisplayName(user);
+  const visualName = toUpperText(displayName);
 
   return (
     <tr className={styles.tableRow}>
@@ -34,9 +30,9 @@ const UsersTableRow = ({ user, currentUserId, onEdit, onToggleStatus }) => {
             {getUserInitials(user.name, user.username)}
           </span>
           <div className={styles.userDetails}>
-            <span className={styles.userName}>{displayName}</span>
-            <span className={styles.userHandle}>
-              {buildSecondaryLine(user)}
+            <span className={styles.userName}>{visualName}</span>
+            <span className={styles.userSecondary}>
+              {buildUserSecondaryLine(user)}
             </span>
           </div>
         </div>

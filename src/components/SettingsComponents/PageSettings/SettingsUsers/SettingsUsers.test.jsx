@@ -80,8 +80,8 @@ describe("SettingsUsers", () => {
 
     render(<SettingsUsers />);
 
-    expect(await screen.findByText("Ana Torres")).toBeTruthy();
-    expect(screen.getByText("@luis · luis@crokets.test")).toBeTruthy();
+    expect(await screen.findByText("ANA TORRES")).toBeTruthy();
+    expect(screen.getByText("@LUIS · luis@crokets.test")).toBeTruthy();
 
     const kpis = within(
       screen.getByRole("region", { name: "Resumen de usuarios" })
@@ -111,14 +111,14 @@ describe("SettingsUsers", () => {
 
     render(<SettingsUsers />);
 
-    await screen.findByText("Ana Torres");
+    await screen.findByText("ANA TORRES");
 
     fireEvent.change(screen.getByLabelText("Buscar usuario"), {
       target: { value: "luis" },
     });
 
-    expect(screen.queryByText("Ana Torres")).toBeNull();
-    expect(screen.getByText("Luis Ponce")).toBeTruthy();
+    expect(screen.queryByText("ANA TORRES")).toBeNull();
+    expect(screen.getByText("LUIS PONCE")).toBeTruthy();
   });
 
   it("recarga la lista al pulsar Recargar", async () => {
@@ -126,7 +126,7 @@ describe("SettingsUsers", () => {
 
     render(<SettingsUsers />);
 
-    await screen.findByText("Ana Torres");
+    await screen.findByText("ANA TORRES");
 
     fetchUsers.mockClear();
     fetchUsers.mockResolvedValue({
@@ -138,7 +138,7 @@ describe("SettingsUsers", () => {
     fireEvent.click(screen.getByRole("button", { name: "Recargar" }));
 
     await waitFor(() => expect(fetchUsers).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.queryByText("Luis Ponce")).toBeNull());
+    await waitFor(() => expect(screen.queryByText("LUIS PONCE")).toBeNull());
   });
 
   it("muestra el error de carga en un contenedor role=alert", async () => {
@@ -165,7 +165,7 @@ describe("SettingsUsers", () => {
 
     render(<SettingsUsers />);
 
-    await screen.findByText("Ana Torres");
+    await screen.findByText("ANA TORRES");
 
     fireEvent.click(
       screen.getByRole("button", { name: "Desactivar a Ana Torres" })
@@ -195,7 +195,7 @@ describe("SettingsUsers", () => {
 
     render(<SettingsUsers />);
 
-    await screen.findByText("Ana Torres");
+    await screen.findByText("ANA TORRES");
 
     fireEvent.click(screen.getByRole("button", { name: "Nuevo Usuario" }));
 
@@ -233,7 +233,7 @@ describe("SettingsUsers", () => {
 
     render(<SettingsUsers />);
 
-    await screen.findByText("Ana Torres");
+    await screen.findByText("ANA TORRES");
 
     fireEvent.click(
       screen.getByRole("button", { name: "Editar a Ana Torres" })
@@ -258,7 +258,7 @@ describe("SettingsUsers", () => {
 
     render(<SettingsUsers />);
 
-    await screen.findByText("Ana Torres");
+    await screen.findByText("ANA TORRES");
 
     fireEvent.click(
       screen.getByRole("button", { name: "Editar a Ana Torres" })
@@ -297,7 +297,7 @@ describe("SettingsUsers", () => {
 
     render(<SettingsUsers />);
 
-    await screen.findByText("Ana Torres");
+    await screen.findByText("ANA TORRES");
 
     fireEvent.click(
       screen.getByRole("button", { name: "Editar a Ana Torres" })
@@ -323,7 +323,7 @@ describe("SettingsUsers", () => {
 
     render(<SettingsUsers />);
 
-    await screen.findByText("Ana Torres");
+    await screen.findByText("ANA TORRES");
 
     fireEvent.click(
       screen.getByRole("button", { name: "Editar a Ana Torres" })
