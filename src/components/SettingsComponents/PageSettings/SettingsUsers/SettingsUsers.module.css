@@ -85,7 +85,7 @@
 }
 
 .kpiIconNeutral {
-  background: #eef7fa;
+  background: #f1f5f9;
 }
 
 .kpiIconActive {
@@ -97,16 +97,41 @@
 }
 
 .kpiIconAdmin {
-  background: #fff2e0;
+  background: #e0f2fe;
 }
 
 .kpiIconCashier {
-  background: #e0f2fe;
+  background: #fff2e0;
 }
 
 .kpiIconImage {
   width: 1.25rem;
   height: 1.25rem;
+}
+
+.kpiIconNeutral .kpiIconImage {
+  filter: invert(34%) sepia(12%) saturate(836%) hue-rotate(176deg)
+    brightness(94%) contrast(89%);
+}
+
+.kpiIconActive .kpiIconImage {
+  filter: invert(48%) sepia(79%) saturate(497%) hue-rotate(94deg)
+    brightness(96%) contrast(92%);
+}
+
+.kpiIconInactive .kpiIconImage {
+  filter: invert(27%) sepia(74%) saturate(2832%) hue-rotate(345deg)
+    brightness(93%) contrast(92%);
+}
+
+.kpiIconAdmin .kpiIconImage {
+  filter: invert(31%) sepia(58%) saturate(1242%) hue-rotate(157deg)
+    brightness(95%) contrast(93%);
+}
+
+.kpiIconCashier .kpiIconImage {
+  filter: invert(41%) sepia(85%) saturate(2255%) hue-rotate(1deg)
+    brightness(97%) contrast(95%);
 }
 
 .kpiBody {
@@ -116,7 +141,7 @@
 }
 
 .kpiValue {
-  color: #0b6d85;
+  color: #1e293b;
   font-size: 1.5rem;
   font-weight: 700;
   line-height: 1.1;
