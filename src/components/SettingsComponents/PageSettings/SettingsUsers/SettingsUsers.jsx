@@ -121,6 +121,9 @@ const SettingsUsers = () => {
         mode={formModal.mode}
         user={formModal.user}
         saving={saving}
+        isCurrentUser={
+          formModal.mode === "edit" && formModal.user?.id === currentUserId
+        }
         onSubmit={submitForm}
         onClose={closeFormModal}
       />

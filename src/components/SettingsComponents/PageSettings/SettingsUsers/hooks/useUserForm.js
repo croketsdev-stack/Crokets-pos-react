@@ -6,6 +6,10 @@ export const USER_FORM_EDIT = "edit";
 const USERNAME_PATTERN = /^[a-zA-Z0-9_.-]+$/;
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
+export const NAME_MAX_LENGTH = 100;
+export const USERNAME_MAX_LENGTH = 50;
+export const PASSWORD_MIN_LENGTH = 6;
+
 const resolveRoleName = (roleName) => {
   const normalized = String(roleName || "")
     .trim()
@@ -27,6 +31,15 @@ const buildInitialValues = (mode, user) => ({
   confirmPassword: "",
 });
 
+const normalizeValues = (values) => ({
+  ...values,
+  name: String(values.name || "").trim(),
+  username: String(values.username || "").trim(),
+  email: String(values.email || "")
+    .trim()
+    .toLowerCase(),
+});
+
 export const validateUserForm = (values, mode) => {
   const errors = {};
   const name = String(values.name || "").trim();
@@ -35,6 +48,8 @@ export const validateUserForm = (values, mode) => {
     errors.name = "El nombre completo es obligatorio.";
   } else if (name.length < 2) {
     errors.name = "El nombre debe tener al menos 2 caracteres.";
+  } else if (name.length > NAME_MAX_LENGTH) {
+    errors.name = `El nombre no puede superar los ${NAME_MAX_LENGTH} caracteres.`;
   }
 
   if (!values.role) {
@@ -48,6 +63,8 @@ export const validateUserForm = (values, mode) => {
       errors.username = "El nombre de usuario es obligatorio.";
     } else if (username.length < 3) {
       errors.username = "Debe tener al menos 3 caracteres.";
+    } else if (username.length > USERNAME_MAX_LENGTH) {
+      errors.username = `No puede superar los ${USERNAME_MAX_LENGTH} caracteres.`;
     } else if (!USERNAME_PATTERN.test(username)) {
       errors.username =
         "Solo puede contener letras, números, guiones y guiones bajos.";
@@ -63,8 +80,8 @@ export const validateUserForm = (values, mode) => {
 
     if (!values.password) {
       errors.password = "La contraseña es obligatoria.";
-    } else if (values.password.length < 6) {
-      errors.password = "Debe tener al menos 6 caracteres.";
+    } else if (values.password.length < PASSWORD_MIN_LENGTH) {
+      errors.password = `Debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres.`;
     }
 
     if (values.password !== values.confirmPassword) {
@@ -72,13 +89,16 @@ export const validateUserForm = (values, mode) => {
     }
   } else {
     const password = String(values.password || "");
+    const confirmPassword = String(values.confirmPassword || "");
 
-    if (password.length > 0) {
-      if (password.length < 6) {
-        errors.password = "Debe tener al menos 6 caracteres.";
+    if (password.length > 0 || confirmPassword.length > 0) {
+      if (!password) {
+        errors.password = "Ingresa la nueva contraseña para confirmarla.";
+      } else if (password.length < PASSWORD_MIN_LENGTH) {
+        errors.password = `Debe tener al menos ${PASSWORD_MIN_LENGTH} caracteres.`;
       }
 
-      if (password !== values.confirmPassword) {
+      if (password !== confirmPassword) {
         errors.confirmPassword = "Las contraseñas no coinciden.";
       }
     }
@@ -121,7 +141,7 @@ const useUserForm = ({ mode = USER_FORM_CREATE, user = null, onSubmit }) => {
 
     if (Object.keys(errors).length > 0) return;
 
-    onSubmit(values);
+    onSubmit(normalizeValues(values));
   };
 
   return {

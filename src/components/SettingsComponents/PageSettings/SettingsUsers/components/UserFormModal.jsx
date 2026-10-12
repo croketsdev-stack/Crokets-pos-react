@@ -1,13 +1,26 @@
 import { useEffect, useState } from "react";
 
 import styles from "../SettingsUsers.module.css";
-import useUserForm, { USER_FORM_EDIT } from "../hooks/useUserForm";
+import useUserForm, {
+  NAME_MAX_LENGTH,
+  USER_FORM_EDIT,
+  USERNAME_MAX_LENGTH,
+} from "../hooks/useUserForm";
 import { ROLE_FORM_OPTIONS } from "../hooks/useSettingsUsers";
 
 const COPY_FEEDBACK_TIMEOUT = 1500;
 
-const UserFormModal = ({ isOpen, mode, user, saving, onSubmit, onClose }) => {
+const UserFormModal = ({
+  isOpen,
+  mode,
+  user,
+  saving,
+  isCurrentUser,
+  onSubmit,
+  onClose,
+}) => {
   const isEdit = mode === USER_FORM_EDIT;
+  const isRoleLocked = isEdit && isCurrentUser;
 
   const { values, getFieldError, handleBlur, handleChange, handleSubmit } =
     useUserForm({ mode, user, onSubmit });
@@ -130,6 +143,7 @@ const UserFormModal = ({ isOpen, mode, user, saving, onSubmit, onClose }) => {
             <input
               id="settings-users-name"
               type="text"
+              maxLength={NAME_MAX_LENGTH}
               className={[
                 styles.formInput,
                 nameError ? styles.fieldInvalid : "",
@@ -167,6 +181,7 @@ const UserFormModal = ({ isOpen, mode, user, saving, onSubmit, onClose }) => {
                 <input
                   id="settings-users-username"
                   type="text"
+                  maxLength={USERNAME_MAX_LENGTH}
                   className={[
                     styles.formInput,
                     usernameError ? styles.fieldInvalid : "",
@@ -234,7 +249,7 @@ const UserFormModal = ({ isOpen, mode, user, saving, onSubmit, onClose }) => {
               className={styles.formSelect}
               value={values.role}
               onChange={(event) => handleChange("role", event.target.value)}
-              disabled={saving}
+              disabled={saving || isRoleLocked}
             >
               {ROLE_FORM_OPTIONS.map((option) => (
                 <option key={option.value} value={option.value}>
@@ -242,6 +257,11 @@ const UserFormModal = ({ isOpen, mode, user, saving, onSubmit, onClose }) => {
                 </option>
               ))}
             </select>
+            {isRoleLocked ? (
+              <span className={styles.fieldHint}>
+                No puedes cambiar tu propio rol.
+              </span>
+            ) : null}
           </div>
 
           <div className={styles.formGroup}>
