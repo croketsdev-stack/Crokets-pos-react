@@ -8,8 +8,10 @@ const UsersTable = ({
   loading,
   error,
   currentUserId,
+  hasActiveFilters,
   onEdit,
   onToggleStatus,
+  onClearFilters,
   footer,
 }) => {
   if (loading) {
@@ -35,6 +37,7 @@ const UsersTable = ({
 
   if (users.length === 0) {
     const hasAnyUser = (totalCount ?? 0) > 0;
+    const showClearFilters = hasAnyUser && hasActiveFilters;
 
     return (
       <div className={styles.tableCard}>
@@ -53,6 +56,15 @@ const UsersTable = ({
               ? "No hay usuarios que coincidan con la búsqueda o los filtros aplicados."
               : "Crea el primer usuario para comenzar a administrar accesos."}
           </p>
+          {showClearFilters ? (
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={onClearFilters}
+            >
+              Limpiar filtros
+            </button>
+          ) : null}
         </div>
       </div>
     );

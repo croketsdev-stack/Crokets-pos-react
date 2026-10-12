@@ -7,6 +7,8 @@ import useUserForm, {
   USERNAME_MAX_LENGTH,
 } from "../hooks/useUserForm";
 import { ROLE_FORM_OPTIONS } from "../hooks/useSettingsUsers";
+import eyeIcon from "../../../../../assets/icons/eye-solid-full.svg";
+import eyeSlashIcon from "../../../../../assets/icons/eye-slash-solid-full.svg";
 
 const COPY_FEEDBACK_TIMEOUT = 1500;
 
@@ -33,6 +35,8 @@ const UserFormModal = ({
   } = useUserForm({ mode, user, existingUsers, onSubmit });
 
   const [idCopied, setIdCopied] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (!isOpen) return undefined;
@@ -326,26 +330,46 @@ const UserFormModal = ({
             >
               {passwordLabel}
             </label>
-            <input
-              id="settings-users-password"
-              type="password"
-              className={[
-                styles.formInput,
-                passwordError ? styles.fieldInvalid : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              value={values.password}
-              placeholder={passwordPlaceholder}
-              onChange={(event) => handleChange("password", event.target.value)}
-              onBlur={() => handleBlur("password")}
-              disabled={saving}
-              aria-invalid={passwordError ? "true" : undefined}
-              aria-describedby={
-                passwordError ? "settings-users-password-error" : undefined
-              }
-              autoComplete="new-password"
-            />
+            <div className={styles.passwordInputWrapper}>
+              <input
+                id="settings-users-password"
+                type={showPassword ? "text" : "password"}
+                className={[
+                  styles.formInput,
+                  passwordError ? styles.fieldInvalid : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                value={values.password}
+                placeholder={passwordPlaceholder}
+                onChange={(event) =>
+                  handleChange("password", event.target.value)
+                }
+                onBlur={() => handleBlur("password")}
+                disabled={saving}
+                aria-invalid={passwordError ? "true" : undefined}
+                aria-describedby={
+                  passwordError ? "settings-users-password-error" : undefined
+                }
+                autoComplete="new-password"
+              />
+              <button
+                type="button"
+                className={styles.passwordToggle}
+                onClick={() => setShowPassword((prev) => !prev)}
+                aria-label={
+                  showPassword ? "Ocultar contraseña" : "Mostrar contraseña"
+                }
+                tabIndex={-1}
+              >
+                <img
+                  src={showPassword ? eyeSlashIcon : eyeIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className={styles.passwordToggleIcon}
+                />
+              </button>
+            </div>
             {passwordError ? (
               <span
                 id="settings-users-password-error"
@@ -365,33 +389,53 @@ const UserFormModal = ({
             >
               {confirmPasswordLabel}
             </label>
-            <input
-              id="settings-users-confirm-password"
-              type="password"
-              className={[
-                styles.formInput,
-                confirmPasswordError
-                  ? styles.fieldInvalid
-                  : confirmPasswordSuccess
-                    ? styles.fieldValid
-                    : "",
-              ]
-                .filter(Boolean)
-                .join(" ")}
-              value={values.confirmPassword}
-              onChange={(event) =>
-                handleChange("confirmPassword", event.target.value)
-              }
-              onBlur={() => handleBlur("confirmPassword")}
-              disabled={saving}
-              aria-invalid={confirmPasswordError ? "true" : undefined}
-              aria-describedby={
-                confirmPasswordError
-                  ? "settings-users-confirm-password-error"
-                  : undefined
-              }
-              autoComplete="off"
-            />
+            <div className={styles.passwordInputWrapper}>
+              <input
+                id="settings-users-confirm-password"
+                type={showConfirmPassword ? "text" : "password"}
+                className={[
+                  styles.formInput,
+                  confirmPasswordError
+                    ? styles.fieldInvalid
+                    : confirmPasswordSuccess
+                      ? styles.fieldValid
+                      : "",
+                ]
+                  .filter(Boolean)
+                  .join(" ")}
+                value={values.confirmPassword}
+                onChange={(event) =>
+                  handleChange("confirmPassword", event.target.value)
+                }
+                onBlur={() => handleBlur("confirmPassword")}
+                disabled={saving}
+                aria-invalid={confirmPasswordError ? "true" : undefined}
+                aria-describedby={
+                  confirmPasswordError
+                    ? "settings-users-confirm-password-error"
+                    : undefined
+                }
+                autoComplete="off"
+              />
+              <button
+                type="button"
+                className={styles.passwordToggle}
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                aria-label={
+                  showConfirmPassword
+                    ? "Ocultar contraseña"
+                    : "Mostrar contraseña"
+                }
+                tabIndex={-1}
+              >
+                <img
+                  src={showConfirmPassword ? eyeSlashIcon : eyeIcon}
+                  alt=""
+                  aria-hidden="true"
+                  className={styles.passwordToggleIcon}
+                />
+              </button>
+            </div>
             {confirmPasswordError ? (
               <span
                 id="settings-users-confirm-password-error"

@@ -136,8 +136,10 @@ const SettingsUsers = () => {
         loading={loading}
         error={error}
         currentUserId={currentUserId}
+        hasActiveFilters={hasActiveFilters}
         onEdit={openEditModal}
         onToggleStatus={openStatusModal}
+        onClearFilters={clearFilters}
         footer={
           filteredUsers.length > 0 ? (
             <PaginationBar

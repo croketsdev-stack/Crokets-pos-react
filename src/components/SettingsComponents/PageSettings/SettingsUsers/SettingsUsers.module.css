@@ -738,6 +738,39 @@
   text-transform: uppercase;
 }
 
+.passwordInputWrapper {
+  display: flex;
+  position: relative;
+  align-items: center;
+}
+
+.passwordInputWrapper .formInput {
+  padding-right: 2.75rem;
+}
+
+.passwordToggle {
+  position: absolute;
+  right: 0.75rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.25rem;
+}
+
+.passwordToggleIcon {
+  width: 1.1rem;
+  height: 1.1rem;
+  opacity: 0.6;
+}
+
+.passwordToggle:hover .passwordToggleIcon,
+.passwordToggle:focus-visible .passwordToggleIcon {
+  opacity: 1;
+}
+
 .fieldInvalid {
   border-color: #dc2626;
 }

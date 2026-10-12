@@ -631,4 +631,69 @@ describe("SettingsUsers", () => {
       "invert(31%) sepia(58%) saturate(1242%) hue-rotate(157deg)"
     );
   });
+
+  it("alterna la visibilidad de la contrasena y su confirmacion", async () => {
+    mockLoadSuccess();
+
+    render(<SettingsUsers />);
+
+    await screen.findByText("ANA TORRES");
+
+    fireEvent.click(screen.getByRole("button", { name: "Nuevo Usuario" }));
+
+    const passwordInput = screen.getByLabelText("Contraseña inicial");
+    const passwordWrapper = passwordInput.parentElement;
+
+    expect(passwordInput.getAttribute("type")).toBe("password");
+
+    fireEvent.click(
+      within(passwordWrapper).getByRole("button", {
+        name: "Mostrar contraseña",
+      })
+    );
+
+    expect(passwordInput.getAttribute("type")).toBe("text");
+    expect(
+      within(passwordWrapper).getByRole("button", {
+        name: "Ocultar contraseña",
+      })
+    ).toBeTruthy();
+
+    const confirmInput = screen.getByLabelText("Confirmar contraseña");
+    const confirmWrapper = confirmInput.parentElement;
+
+    expect(confirmInput.getAttribute("type")).toBe("password");
+
+    fireEvent.click(
+      within(confirmWrapper).getByRole("button", {
+        name: "Mostrar contraseña",
+      })
+    );
+
+    expect(confirmInput.getAttribute("type")).toBe("text");
+    expect(passwordInput.getAttribute("type")).toBe("text");
+  });
+
+  it("muestra el boton Limpiar filtros en el estado vacio de la tabla", async () => {
+    mockLoadSuccess();
+
+    render(<SettingsUsers />);
+
+    await screen.findByText("ANA TORRES");
+
+    expect(screen.queryByText("Sin resultados")).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Buscar usuario"), {
+      target: { value: "zzz" },
+    });
+
+    const emptyState = screen.getByText("Sin resultados").closest("div");
+
+    fireEvent.click(
+      within(emptyState).getByRole("button", { name: "Limpiar filtros" })
+    );
+
+    expect(screen.getByLabelText("Buscar usuario").value).toBe("");
+    expect(screen.getByText("ANA TORRES")).toBeTruthy();
+  });
 });
