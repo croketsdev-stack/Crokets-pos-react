@@ -1,122 +1,14 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 
+import { createTransferFolio } from "../utils/transfersUtils";
 import {
-  createTransferFolio,
-  normalizeTransferOrder,
-} from "../utils/transfersUtils";
-
-const getBranchFallback = (currentBranch) => {
-  if (!currentBranch?.id) {
-    return [];
-  }
-
-  return [
-    {
-      id: currentBranch.id,
-      name: currentBranch.name || "Sucursal actual",
-      code: currentBranch.code || "",
-    },
-  ];
-};
-
-const getProductId = (product) => {
-  return product?.productId || product?.product_id || product?.id || null;
-};
-
-const getProductPrices = (product) => {
-  return {
-    costPrice: Number(product?.costo ?? product?.costPrice ?? 0) || 0,
-    salePrice: Number(product?.precio ?? product?.salePrice ?? 0) || 0,
-  };
-};
-
-const buildTransferItems = (items = []) => {
-  return items.map((item) => ({
-    productId: getProductId(item),
-    barcode: String(item?.barcode ?? item?.codigo ?? "").trim() || "—",
-    name:
-      String(item?.name ?? item?.descripcion ?? "").trim() ||
-      "PRODUCTO SIN NOMBRE",
-    requestedQty: Number(item?.quantity ?? item?.requestedQty ?? 0) || 0,
-    receivedQty: 0,
-    returnedQty: 0,
-    ...getProductPrices(item),
-  }));
-};
-
-const validateTransferItems = (items = []) => {
-  const normalizedItems = buildTransferItems(items).filter(
-    (item) => item.productId && item.requestedQty > 0
-  );
-
-  if (normalizedItems.length === 0) {
-    throw new Error("Agrega al menos un producto al traspaso.");
-  }
-
-  return normalizedItems;
-};
-
-const TRANSFER_SELECT = `
-  id,
-  from_branch_id,
-  to_branch_id,
-  user_id,
-  status,
-  notes,
-  created_at,
-  approved_at,
-  completed_at,
-  from_branch:branches!inventory_transfers_from_branch_id_fkey (
-    id,
-    name,
-    code
-  ),
-  to_branch:branches!inventory_transfers_to_branch_id_fkey (
-    id,
-    name,
-    code
-  ),
-  user:users!inventory_transfers_user_id_fkey (
-    id,
-    username,
-    email
-  ),
-  inventory_transfer_items (
-    id,
-    product_id,
-    quantity,
-    cost_price,
-    origin_stock_before,
-    origin_stock_after,
-    destination_stock_before,
-    destination_stock_after,
-    received_qty,
-    returned_qty,
-    product:products!inventory_transfer_items_product_id_fkey (
-      id,
-      name,
-      barcode
-    )
-  )
-`;
-
-const fetchTransferOrderById = async (transferOrderId) => {
-  const { data, error } = await supabase
-    .from("inventory_transfers")
-    .select(TRANSFER_SELECT)
-    .eq("id", transferOrderId)
-    .maybeSingle();
-
-  if (error) {
-    throw error;
-  }
-
-  if (!data) {
-    return null;
-  }
-
-  return normalizeTransferOrder(data);
-};
+  getBranchFallback,
+  validateTransferItems,
+} from "../utils/transfersCalculationService";
+import {
+  TRANSFER_SELECT,
+  fetchTransferOrderById,
+} from "./transfersDetailService";
 
 export const fetchTransferBranchOptions = async (currentBranch) => {
   try {
@@ -158,7 +50,9 @@ export const loadTransferOrders = async () => {
     throw error;
   }
 
-  return (Array.isArray(data) ? data : []).map(normalizeTransferOrder);
+  return (Array.isArray(data) ? data : []).map((order) =>
+    normalizeTransferOrderFromDetail(order)
+  );
 };
 
 export const createTransferOrder = async ({

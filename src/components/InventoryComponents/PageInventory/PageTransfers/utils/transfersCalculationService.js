@@ -146,3 +146,58 @@ export const getTransferMetrics = ({ orders = [], currentBranchId = "" }) => {
     }
   );
 };
+
+// ============================================================================
+// Helpers de construccion y validacion de items de traspaso (logica pura).
+// ============================================================================
+
+export const getBranchFallback = (currentBranch) => {
+  if (!currentBranch?.id) {
+    return [];
+  }
+
+  return [
+    {
+      id: currentBranch.id,
+      name: currentBranch.name || "Sucursal actual",
+      code: currentBranch.code || "",
+    },
+  ];
+};
+
+export const getProductId = (product) => {
+  return product?.productId || product?.product_id || product?.id || null;
+};
+
+export const getProductPrices = (product) => {
+  return {
+    costPrice: Number(product?.costo ?? product?.costPrice ?? 0) || 0,
+    salePrice: Number(product?.precio ?? product?.salePrice ?? 0) || 0,
+  };
+};
+
+export const buildTransferItems = (items = []) => {
+  return items.map((item) => ({
+    productId: getProductId(item),
+    barcode: String(item?.barcode ?? item?.codigo ?? "").trim() || "—",
+    name:
+      String(item?.name ?? item?.descripcion ?? "").trim() ||
+      "PRODUCTO SIN NOMBRE",
+    requestedQty: Number(item?.quantity ?? item?.requestedQty ?? 0) || 0,
+    receivedQty: 0,
+    returnedQty: 0,
+    ...getProductPrices(item),
+  }));
+};
+
+export const validateTransferItems = (items = []) => {
+  const normalizedItems = buildTransferItems(items).filter(
+    (item) => item.productId && item.requestedQty > 0
+  );
+
+  if (normalizedItems.length === 0) {
+    throw new Error("Agrega al menos un producto al traspaso.");
+  }
+
+  return normalizedItems;
+};
