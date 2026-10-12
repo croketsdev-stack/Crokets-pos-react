@@ -377,9 +377,18 @@
 }
 
 .userName {
-  color: #1f2937;
-  font-size: 0.9rem;
+  color: #0f172a;
+  font-size: 0.95rem;
   font-weight: 700;
+  line-height: 1.25;
+}
+
+.userSecondary {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 500;
+  margin-top: 0.15rem;
+  line-height: 1.25;
 }
 
 .userHandle {

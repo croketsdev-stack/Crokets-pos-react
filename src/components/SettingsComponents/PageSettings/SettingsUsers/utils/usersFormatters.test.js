@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  buildUserSecondaryLine,
   formatUserDate,
   getRoleBadgeClass,
   getRoleBadgeVariant,
@@ -88,6 +89,35 @@ describe("usersFormatters", () => {
 
     it("degrada cuando no hay nombre ni username", () => {
       expect(getUserDisplayName({})).toBe("SIN USUARIO");
+    });
+  });
+
+  describe("buildUserSecondaryLine", () => {
+    it("combina el @usuario en mayusculas con el correo cuando hay nombre", () => {
+      expect(
+        buildUserSecondaryLine({
+          name: "Ana Torres",
+          username: "ana",
+          email: "ana@crokets.test",
+        })
+      ).toBe("@ANA · ana@crokets.test");
+    });
+
+    it("omite el @usuario cuando el nombre principal ya es el username", () => {
+      expect(
+        buildUserSecondaryLine({
+          name: "",
+          username: "valeria",
+          email: "valeria@crokets.test",
+        })
+      ).toBe("valeria@crokets.test");
+    });
+
+    it("degrada a etiquetas seguras cuando faltan datos", () => {
+      expect(buildUserSecondaryLine({ name: "Ana" })).toBe(
+        "Sin usuario · Sin correo"
+      );
+      expect(buildUserSecondaryLine({})).toBe("Sin correo");
     });
   });
 

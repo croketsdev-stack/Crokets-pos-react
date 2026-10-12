@@ -60,10 +60,16 @@ export const getUserDisplayName = (user) => {
 export const toUpperText = (value) => String(value || "").toUpperCase();
 
 export const buildUserSecondaryLine = (user) => {
+  const email = String(user?.email || "").trim() || "Sin correo";
+  const hasName = Boolean(String(user?.name || "").trim());
+
+  if (!hasName) {
+    return email;
+  }
+
   const handle = user?.username
     ? `@${toUpperText(user.username)}`
     : "Sin usuario";
-  const email = String(user?.email || "").trim() || "Sin correo";
 
   return `${handle} · ${email}`;
 };
