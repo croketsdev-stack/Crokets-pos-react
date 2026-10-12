@@ -183,6 +183,22 @@
   box-sizing: border-box;
 }
 
+.clearFiltersButton {
+  align-self: center;
+  padding: 0.35rem 0.5rem;
+  color: #0b6d85;
+  font-size: 0.85rem;
+  font-weight: 700;
+  background: none;
+  border: none;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.clearFiltersButton:hover {
+  color: #05313d;
+}
+
 .filterActions {
   display: flex;
   flex-wrap: wrap;
@@ -191,7 +207,8 @@
 }
 
 .searchInput:focus-visible,
-.select:focus-visible {
+.select:focus-visible,
+.clearFiltersButton:focus-visible {
   border-color: #0b6d85;
   outline: 3px solid #05313d;
   outline-offset: 1px;

@@ -17,10 +17,15 @@ import {
 
 const SETTINGS_USERS_REQUEST = "settings:users";
 
-export const ROLE_OPTIONS = [
+export const ROLE_FILTER_OPTIONS = [
   { value: "all", label: "Todos los roles" },
   { value: "admin", label: "Administradores" },
   { value: "cajero", label: "Cajeros" },
+];
+
+export const ROLE_FORM_OPTIONS = [
+  { value: "admin", label: "Administrador" },
+  { value: "cajero", label: "Cajero" },
 ];
 
 export const STATUS_OPTIONS = [
@@ -117,6 +122,16 @@ const useSettingsUsers = () => {
   const metrics = useMemo(() => calculateUserMetrics(users), [users]);
 
   const roleMap = useMemo(() => buildRoleMap(roles), [roles]);
+
+  const hasActiveFilters = Boolean(
+    searchTerm || roleFilter !== "all" || statusFilter !== "all"
+  );
+
+  const clearFilters = useCallback(() => {
+    setSearchTerm("");
+    setRoleFilter("all");
+    setStatusFilter("all");
+  }, []);
 
   const reload = useCallback(() => {
     setReloadCount((count) => count + 1);
@@ -266,6 +281,8 @@ const useSettingsUsers = () => {
   const currentUserId = currentUser?.id || null;
 
   return {
+    clearFilters,
+    clearFeedback,
     closeFormModal,
     closeStatusModal,
     confirmStatus,
@@ -274,13 +291,15 @@ const useSettingsUsers = () => {
     feedback,
     filteredUsers,
     formModal,
+    hasActiveFilters,
     loading,
     metrics,
     openCreateModal,
     openEditModal,
     openStatusModal,
+    reload,
     roleFilter,
-    roleOptions: ROLE_OPTIONS,
+    roleOptions: ROLE_FILTER_OPTIONS,
     saving,
     searchTerm,
     setRoleFilter,
@@ -291,8 +310,6 @@ const useSettingsUsers = () => {
     statusOptions: STATUS_OPTIONS,
     submitForm,
     users,
-    clearFeedback,
-    reload,
   };
 };
 

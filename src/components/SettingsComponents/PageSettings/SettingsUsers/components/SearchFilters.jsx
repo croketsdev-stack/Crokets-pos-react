@@ -12,6 +12,8 @@ const SearchFilters = ({
   statusFilter,
   onStatusFilterChange,
   statusOptions,
+  hasActiveFilters,
+  onClearFilters,
   onReload,
   onNewUser,
   loading,
@@ -69,6 +71,16 @@ const SearchFilters = ({
           </option>
         ))}
       </select>
+
+      {hasActiveFilters ? (
+        <button
+          type="button"
+          className={styles.clearFiltersButton}
+          onClick={onClearFilters}
+        >
+          Limpiar filtros
+        </button>
+      ) : null}
     </div>
 
     <div className={styles.filterActions}>

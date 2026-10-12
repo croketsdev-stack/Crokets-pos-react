@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import styles from "../SettingsUsers.module.css";
 import useUserForm, { USER_FORM_EDIT } from "../hooks/useUserForm";
-import { ROLE_OPTIONS } from "../hooks/useSettingsUsers";
+import { ROLE_FORM_OPTIONS } from "../hooks/useSettingsUsers";
 
 const COPY_FEEDBACK_TIMEOUT = 1500;
 
@@ -236,13 +236,11 @@ const UserFormModal = ({ isOpen, mode, user, saving, onSubmit, onClose }) => {
               onChange={(event) => handleChange("role", event.target.value)}
               disabled={saving}
             >
-              {ROLE_OPTIONS.filter((option) => option.value !== "all").map(
-                (option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                )
-              )}
+              {ROLE_FORM_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
             </select>
           </div>
 

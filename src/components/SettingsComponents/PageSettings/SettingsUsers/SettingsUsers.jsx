@@ -14,6 +14,7 @@ const FEEDBACK_TIMEOUT = 5000;
 
 const SettingsUsers = () => {
   const {
+    clearFilters,
     clearFeedback,
     closeFormModal,
     closeStatusModal,
@@ -23,6 +24,7 @@ const SettingsUsers = () => {
     feedback,
     filteredUsers,
     formModal,
+    hasActiveFilters,
     loading,
     metrics,
     openCreateModal,
@@ -94,6 +96,8 @@ const SettingsUsers = () => {
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
         statusOptions={statusOptions}
+        hasActiveFilters={hasActiveFilters}
+        onClearFilters={clearFilters}
         onReload={reload}
         onNewUser={openCreateModal}
         loading={loading}
