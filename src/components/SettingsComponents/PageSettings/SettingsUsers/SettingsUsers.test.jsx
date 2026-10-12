@@ -189,6 +189,8 @@ describe("SettingsUsers", () => {
 
     const dialog = screen.getByRole("dialog");
     expect(dialog.textContent).toContain("Desactivar usuario");
+    expect(dialog.textContent).toContain("ANA TORRES");
+    expect(dialog.textContent).toContain("@ANA");
 
     fireEvent.click(screen.getByRole("button", { name: "Desactivar" }));
 

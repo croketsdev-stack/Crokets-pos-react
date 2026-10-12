@@ -3,7 +3,11 @@ import { useEffect } from "react";
 import styles from "../SettingsUsers.module.css";
 import lockIcon from "../../../../../assets/icons/lock-solid-full.svg";
 import circleCheckIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
-import { getUserDisplayName, getUserInitials } from "../utils/usersFormatters";
+import {
+  getUserDisplayName,
+  getUserInitials,
+  toUpperText,
+} from "../utils/usersFormatters";
 
 const UserStatusModal = ({ isOpen, user, saving, onConfirm, onClose }) => {
   useEffect(() => {
@@ -55,9 +59,11 @@ const UserStatusModal = ({ isOpen, user, saving, onConfirm, onClose }) => {
               {getUserInitials(user.name, user.username)}
             </span>
             <div className={styles.statusUser}>
-              <span className={styles.statusUserText}>{displayName}</span>
+              <span className={styles.statusUserText}>
+                {toUpperText(displayName)}
+              </span>
               <span className={styles.userHandle}>
-                @{user.username || "n/a"}
+                {user.username ? `@${toUpperText(user.username)}` : "n/a"}
               </span>
             </div>
           </div>
