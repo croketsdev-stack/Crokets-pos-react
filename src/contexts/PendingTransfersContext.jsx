@@ -44,9 +44,11 @@ export const PendingTransfersProvider = ({ children }) => {
     setIsLoading(true);
     try {
       const orders = await loadTransferOrders();
-      // ...resto igual
+      const count = getPendingReceiptsCount({ orders, currentBranchId });
+      setPendingReceiptsCount(count);
+      setLastRefreshAt(new Date());
     } catch (err) {
-      // ...igual
+      console.error("Error al refrescar recepciones pendientes:", err);
     } finally {
       setIsLoading(false);
     }
