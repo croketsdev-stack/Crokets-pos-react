@@ -1,6 +1,7 @@
 import styles from "../SettingsUsers.module.css";
 import searchIcon from "../../../../../assets/icons/searchIcon.svg";
 import rotateIcon from "../../../../../assets/icons/rotate-solid-full.svg";
+import rotateLeftIcon from "../../../../../assets/icons/rotate-left-solid-full.svg";
 import plusIcon from "../../../../../assets/icons/plus-solid-full.svg";
 
 const SearchFilters = ({
@@ -75,9 +76,15 @@ const SearchFilters = ({
       {hasActiveFilters ? (
         <button
           type="button"
-          className={styles.clearFiltersButton}
+          className={styles.secondaryButton}
           onClick={onClearFilters}
         >
+          <img
+            src={rotateLeftIcon}
+            alt=""
+            aria-hidden="true"
+            className={styles.buttonIcon}
+          />
           Limpiar filtros
         </button>
       ) : null}

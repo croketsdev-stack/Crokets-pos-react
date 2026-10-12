@@ -621,6 +621,19 @@ describe("SettingsUsers", () => {
 
     expect(reloadIcon.className).toBe(styles.buttonIcon);
     expect(newUserIcon.className).toBe(styles.buttonIcon);
+
+    fireEvent.change(screen.getByLabelText("Buscar usuario"), {
+      target: { value: "luis" },
+    });
+
+    const clearFiltersButton = screen.getByRole("button", {
+      name: "Limpiar filtros",
+    });
+
+    expect(clearFiltersButton.className).toContain(styles.secondaryButton);
+    expect(clearFiltersButton.querySelector("img").className).toBe(
+      styles.buttonIcon
+    );
   });
 
   it("define los filtros de color de los iconos de accion", () => {

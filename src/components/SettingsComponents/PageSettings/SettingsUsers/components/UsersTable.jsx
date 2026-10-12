@@ -1,5 +1,6 @@
 import styles from "../SettingsUsers.module.css";
 import userIcon from "../../../../../assets/icons/user-solid.svg";
+import rotateLeftIcon from "../../../../../assets/icons/rotate-left-solid-full.svg";
 import UsersTableRow from "./UsersTableRow";
 
 const UsersTable = ({
@@ -62,6 +63,12 @@ const UsersTable = ({
               className={styles.secondaryButton}
               onClick={onClearFilters}
             >
+              <img
+                src={rotateLeftIcon}
+                alt=""
+                aria-hidden="true"
+                className={styles.buttonIcon}
+              />
               Limpiar filtros
             </button>
           ) : null}
