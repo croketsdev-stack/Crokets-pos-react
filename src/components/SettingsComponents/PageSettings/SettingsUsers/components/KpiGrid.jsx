@@ -3,6 +3,7 @@ import userIcon from "../../../../../assets/icons/user-solid.svg";
 import circleCheckIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
 import lockIcon from "../../../../../assets/icons/lock-solid-full.svg";
 import gearIcon from "../../../../../assets/icons/gear-solid-full.svg";
+import receiptIcon from "../../../../../assets/icons/receipt-solid-full.svg";
 
 const toToneClass = (styles, base, tone) =>
   styles[`${base}${tone.charAt(0).toUpperCase()}${tone.slice(1)}`] || "";
@@ -39,11 +40,18 @@ const KpiGrid = ({ metrics }) => {
       tone: "inactive",
     },
     {
-      key: "roles",
-      label: "Administradores / Cajeros",
-      value: `${safeMetrics.admins} / ${safeMetrics.cashiers}`,
+      key: "admins",
+      label: "Administradores",
+      value: safeMetrics.admins,
       icon: gearIcon,
-      tone: "roles",
+      tone: "admin",
+    },
+    {
+      key: "cashiers",
+      label: "Cajeros",
+      value: safeMetrics.cashiers,
+      icon: receiptIcon,
+      tone: "cashier",
     },
   ];
 

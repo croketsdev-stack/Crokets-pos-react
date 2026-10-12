@@ -57,7 +57,7 @@
 
 .kpiGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 1rem;
   margin-bottom: 1.25rem;
 }
@@ -96,8 +96,12 @@
   background: #fee2e2;
 }
 
-.kpiIconRoles {
+.kpiIconAdmin {
   background: #fff2e0;
+}
+
+.kpiIconCashier {
+  background: #e0f2fe;
 }
 
 .kpiIconImage {

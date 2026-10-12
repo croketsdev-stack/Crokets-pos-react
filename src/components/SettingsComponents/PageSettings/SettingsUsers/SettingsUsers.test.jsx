@@ -92,6 +92,9 @@ const buildCashierUsers = (count) =>
     };
   });
 
+const mockAdminsCount = USERS.filter((u) => u.roleName === "admin").length;
+const mockCashiersCount = USERS.filter((u) => u.roleName === "cajero").length;
+
 const mockLoadSuccess = () => {
   fetchUsers.mockResolvedValue({ success: true, data: USERS, error: null });
   fetchRoles.mockResolvedValue({ success: true, data: ROLES, error: null });
@@ -118,9 +121,12 @@ describe("SettingsUsers", () => {
     ).toBe("2");
     expect(kpis.getByText("Activos").previousSibling.textContent).toBe("1");
     expect(kpis.getByText("Inactivos").previousSibling.textContent).toBe("1");
-    expect(
-      kpis.getByText("Administradores / Cajeros").previousSibling.textContent
-    ).toBe("1 / 1");
+    expect(kpis.getByText("Administradores").previousSibling.textContent).toBe(
+      String(mockAdminsCount)
+    );
+    expect(kpis.getByText("Cajeros").previousSibling.textContent).toBe(
+      String(mockCashiersCount)
+    );
 
     const headers = screen.getAllByRole("columnheader");
     expect(headers.map((th) => th.textContent)).toEqual([
