@@ -65,6 +65,22 @@ const USERS = [
   },
 ];
 
+const buildCashierUsers = (count) =>
+  Array.from({ length: count }, (_, index) => {
+    const order = String(index + 1).padStart(2, "0");
+
+    return {
+      id: `u${order}`,
+      name: `Cajero ${order}`,
+      username: `cajero${order}`,
+      email: `cajero${order}@crokets.test`,
+      status: true,
+      roleId: "role-cashier",
+      roleName: "cajero",
+      createdAt: "2026-03-01T10:00:00.000Z",
+    };
+  });
+
 const mockLoadSuccess = () => {
   fetchUsers.mockResolvedValue({ success: true, data: USERS, error: null });
   fetchRoles.mockResolvedValue({ success: true, data: ROLES, error: null });
@@ -341,5 +357,70 @@ describe("SettingsUsers", () => {
     );
 
     expect(screen.getByRole("button", { name: "Copiar" })).toBeTruthy();
+  });
+
+  it("limpia los filtros activos con el boton Limpiar filtros", async () => {
+    mockLoadSuccess();
+
+    render(<SettingsUsers />);
+
+    await screen.findByText("ANA TORRES");
+
+    expect(
+      screen.queryByRole("button", { name: "Limpiar filtros" })
+    ).toBeNull();
+
+    fireEvent.change(screen.getByLabelText("Buscar usuario"), {
+      target: { value: "luis" },
+    });
+
+    expect(screen.queryByText("ANA TORRES")).toBeNull();
+
+    fireEvent.click(screen.getByRole("button", { name: "Limpiar filtros" }));
+
+    expect(screen.getByLabelText("Buscar usuario").value).toBe("");
+    expect(screen.getByText("ANA TORRES")).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: "Limpiar filtros" })
+    ).toBeNull();
+  });
+
+  it("pagina el listado de usuarios", async () => {
+    fetchUsers.mockResolvedValue({
+      success: true,
+      data: buildCashierUsers(12),
+    });
+    fetchRoles.mockResolvedValue({ success: true, data: ROLES });
+
+    render(<SettingsUsers />);
+
+    await screen.findByText("CAJERO 01");
+
+    expect(screen.getByText("CAJERO 10")).toBeTruthy();
+    expect(screen.queryByText("CAJERO 11")).toBeNull();
+    expect(screen.getByText("Mostrando 1 a 10 de 12 usuarios")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: "Siguiente" }));
+
+    expect(await screen.findByText("CAJERO 11")).toBeTruthy();
+    expect(screen.queryByText("CAJERO 01")).toBeNull();
+    expect(screen.getByText("Mostrando 11 a 12 de 12 usuarios")).toBeTruthy();
+  });
+
+  it("muestra los roles del formulario en singular", async () => {
+    mockLoadSuccess();
+
+    render(<SettingsUsers />);
+
+    await screen.findByText("ANA TORRES");
+
+    fireEvent.click(screen.getByRole("button", { name: "Nuevo Usuario" }));
+
+    const dialog = screen.getByRole("dialog");
+    const roleSelect = within(dialog).getByLabelText("Rol");
+
+    expect(
+      Array.from(roleSelect.options).map((option) => option.textContent)
+    ).toEqual(["Administrador", "Cajero"]);
   });
 });

@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import {
   calculateUserMetrics,
   filterUsers,
+  sortUsers,
   ROLE_FILTER_ADMIN,
 } from "./usersCalculationService";
 
@@ -121,8 +122,53 @@ describe("usersCalculationService", () => {
       expect(filterUsers(USERS, { searchTerm: "inexistente" })).toEqual([]);
     });
 
+    it("busca por ID parcial y sin distinguir mayusculas", () => {
+      expect(filterUsers(USERS, { searchTerm: "u3" }).map((u) => u.id)).toEqual(
+        ["u3"]
+      );
+      expect(filterUsers(USERS, { searchTerm: "U1" }).map((u) => u.id)).toEqual(
+        ["u1"]
+      );
+    });
+
     it("tolera entradas no arreglo", () => {
       expect(filterUsers(null, { searchTerm: "x" })).toEqual([]);
+    });
+  });
+
+  describe("sortUsers", () => {
+    it("ordena por rol, estado y nombre", () => {
+      expect(filterUsers(USERS, {}).map((user) => user.id)).toEqual([
+        "u1",
+        "u3",
+        "u2",
+        "u4",
+      ]);
+    });
+
+    it("ubica primero a los administradores activos", () => {
+      const ordered = sortUsers([
+        { id: "cajero-activo", roleName: "cajero", status: true, name: "B" },
+        { id: "admin-inactivo", roleName: "admin", status: false, name: "C" },
+        { id: "admin-activo", roleName: "admin", status: true, name: "A" },
+      ]);
+
+      expect(ordered.map((user) => user.id)).toEqual([
+        "admin-activo",
+        "admin-inactivo",
+        "cajero-activo",
+      ]);
+    });
+
+    it("no muta el arreglo original", () => {
+      const source = [...USERS];
+      sortUsers(source);
+
+      expect(source.map((user) => user.id)).toEqual(["u1", "u2", "u3", "u4"]);
+    });
+
+    it("tolera entradas no arreglo", () => {
+      expect(sortUsers(null)).toEqual([]);
     });
   });
 });

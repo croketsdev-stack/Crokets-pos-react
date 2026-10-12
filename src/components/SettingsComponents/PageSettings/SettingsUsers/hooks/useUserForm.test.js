@@ -1,6 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import useUserForm, {
+  NAME_MAX_LENGTH,
+  USERNAME_MAX_LENGTH,
   USER_FORM_CREATE,
   USER_FORM_EDIT,
   validateUserForm,
@@ -67,6 +69,44 @@ describe("validateUserForm", () => {
     expect(errors.confirmPassword).toBe("Las contraseñas no coinciden.");
   });
 
+  it("limita la longitud maxima del nombre y del usuario", () => {
+    const errors = validateUserForm(
+      {
+        name: "a".repeat(NAME_MAX_LENGTH + 1),
+        username: "u".repeat(USERNAME_MAX_LENGTH + 1),
+        email: "nuevo@crokets.test",
+        role: "cajero",
+        password: "secreto123",
+        confirmPassword: "secreto123",
+      },
+      USER_FORM_CREATE
+    );
+
+    expect(errors.name).toBe(
+      `El nombre no puede superar los ${NAME_MAX_LENGTH} caracteres.`
+    );
+    expect(errors.username).toBe(
+      `No puede superar los ${USERNAME_MAX_LENGTH} caracteres.`
+    );
+  });
+
+  it("acepta valores justo en el limite permitido", () => {
+    const errors = validateUserForm(
+      {
+        name: "a".repeat(NAME_MAX_LENGTH),
+        username: "u".repeat(USERNAME_MAX_LENGTH),
+        email: "nuevo@crokets.test",
+        role: "cajero",
+        password: "secreto123",
+        confirmPassword: "secreto123",
+      },
+      USER_FORM_CREATE
+    );
+
+    expect(errors.name).toBeUndefined();
+    expect(errors.username).toBeUndefined();
+  });
+
   it("no exige contrasena al editar si queda en blanco", () => {
     const errors = validateUserForm(
       { name: "Ana", role: "admin", password: "", confirmPassword: "" },
@@ -94,6 +134,21 @@ describe("validateUserForm", () => {
       USER_FORM_EDIT
     );
     expect(mismatch.confirmPassword).toBe("Las contraseñas no coinciden.");
+  });
+
+  it("exige la contrasena al editar cuando solo se llena la confirmacion", () => {
+    const errors = validateUserForm(
+      {
+        name: "Ana",
+        role: "admin",
+        password: "",
+        confirmPassword: "nuevaClave1",
+      },
+      USER_FORM_EDIT
+    );
+
+    expect(errors.password).toBeTruthy();
+    expect(errors.confirmPassword).toBe("Las contraseñas no coinciden.");
   });
 });
 
@@ -136,6 +191,31 @@ describe("useUserForm", () => {
     act(() => result.current.handleSubmit({ preventDefault: vi.fn() }));
 
     expect(onSubmit).not.toHaveBeenCalled();
+  });
+
+  it("normaliza nombre, usuario y correo al enviar", () => {
+    const onSubmit = vi.fn();
+    const { result } = renderHook(() =>
+      useUserForm({
+        mode: USER_FORM_EDIT,
+        user: {
+          ...USERS_FIXTURE,
+          name: "  Ana Torres  ",
+          username: "  ana  ",
+          email: "  Ana@Crokets.test  ",
+        },
+        onSubmit,
+      })
+    );
+
+    act(() => result.current.handleSubmit({ preventDefault: vi.fn() }));
+
+    expect(onSubmit).toHaveBeenCalledTimes(1);
+    expect(onSubmit.mock.calls[0][0]).toMatchObject({
+      name: "Ana Torres",
+      username: "ana",
+      email: "ana@crokets.test",
+    });
   });
 
   it("envia los valores cuando el formulario es valido en edicion", () => {
