@@ -16,8 +16,10 @@ vi.mock(
   })
 );
 
+let mockBranch = { id: "branch-1" };
+
 vi.mock("./BranchContext", () => ({
-  useBranch: () => ({ branch: { id: "branch-1" } }),
+  useBranch: () => ({ branch: mockBranch }),
   BranchProvider: ({ children }) => <>{children}</>,
 }));
 
@@ -50,10 +52,26 @@ const renderProvider = () =>
 describe("PendingTransfersContext - refresh", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockBranch = { id: "branch-1" };
   });
 
   afterEach(() => {
     vi.restoreAllMocks();
+  });
+
+  it("no hace fetch y mantiene pendingReceiptsCount en 0 cuando branch.id esta vacio", async () => {
+    mockBranch = { id: "" };
+
+    renderProvider();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("loading").textContent).toBe("false");
+    });
+
+    expect(loadTransferOrders).not.toHaveBeenCalled();
+    expect(getPendingReceiptsCount).not.toHaveBeenCalled();
+    expect(screen.getByTestId("count").textContent).toBe("0");
+    expect(screen.getByTestId("last-refresh").textContent).toBe("null");
   });
 
   it("asigna pendingReceiptsCount al conteo real (no 0 fijo) tras cargar ordenes", async () => {
