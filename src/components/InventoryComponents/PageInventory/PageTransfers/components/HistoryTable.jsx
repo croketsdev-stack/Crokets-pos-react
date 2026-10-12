@@ -37,7 +37,7 @@ const HistoryTable = ({
               <th>Recibido</th>
               <th>Devuelto</th>
               <th>Creado</th>
-              <th>Recibido</th>
+              <th>Recepción</th>
               <th>Acciones</th>
             </tr>
           </thead>
