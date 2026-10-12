@@ -57,7 +57,8 @@ const NavbarInventory = () => {
     <div className={styles.navbarInventory}>
       <div className={styles.buttonsContainer}>
         {options.map((option) => {
-          const badgeCount = Number(option.badgeCount || 0);
+          const badgeCount =
+            option.id === "traspasos" ? Number(pendingReceiptsCount || 0) : 0;
           return (
             <NavLink
               key={option.id}
