@@ -10,6 +10,7 @@ const UsersTable = ({
   currentUserId,
   onEdit,
   onToggleStatus,
+  footer,
 }) => {
   if (loading) {
     return (
@@ -99,6 +100,7 @@ const UsersTable = ({
           </tbody>
         </table>
       </div>
+      {footer}
     </div>
   );
 };

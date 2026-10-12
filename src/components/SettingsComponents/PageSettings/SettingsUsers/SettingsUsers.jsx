@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 
 import styles from "./SettingsUsers.module.css";
+import PaginationBar from "../../../PaginationBar/PaginationBar";
+import { usePagination } from "../../../../hooks/usePagination";
 import useSettingsUsers from "./hooks/useSettingsUsers";
 import KpiGrid from "./components/KpiGrid";
 import SearchFilters from "./components/SearchFilters";
@@ -11,6 +13,8 @@ import circleCheckIcon from "../../../../assets/icons/circle-check-solid-full.sv
 import circleInfoIcon from "../../../../assets/icons/circle-info-solid-full.svg";
 
 const FEEDBACK_TIMEOUT = 5000;
+const PAGE_SIZE_OPTIONS = [10, 25, 50];
+const PAGE_SIZE_STORAGE_KEY = "settings:users:pageSize";
 
 const SettingsUsers = () => {
   const {
@@ -45,6 +49,23 @@ const SettingsUsers = () => {
     users,
   } = useSettingsUsers();
 
+  const {
+    currentPage,
+    totalPages,
+    pageSize,
+    startIndex,
+    endIndex,
+    pageItems,
+    resetPagination,
+    handlePageChange,
+    handlePageSizeChange,
+  } = usePagination({
+    totalItems: filteredUsers.length,
+    defaultPageSize: PAGE_SIZE_OPTIONS[0],
+    pageSizeOptions: PAGE_SIZE_OPTIONS,
+    storageKey: PAGE_SIZE_STORAGE_KEY,
+  });
+
   useEffect(() => {
     if (!feedback) return undefined;
 
@@ -52,6 +73,12 @@ const SettingsUsers = () => {
 
     return () => window.clearTimeout(timeout);
   }, [feedback, clearFeedback]);
+
+  useEffect(() => {
+    resetPagination();
+  }, [searchTerm, roleFilter, statusFilter, resetPagination]);
+
+  const paginatedUsers = pageItems(filteredUsers);
 
   return (
     <div className={styles.page}>
@@ -104,13 +131,29 @@ const SettingsUsers = () => {
       />
 
       <UsersTable
-        users={filteredUsers}
+        users={paginatedUsers}
         totalCount={users.length}
         loading={loading}
         error={error}
         currentUserId={currentUserId}
         onEdit={openEditModal}
         onToggleStatus={openStatusModal}
+        footer={
+          filteredUsers.length > 0 ? (
+            <PaginationBar
+              currentPage={currentPage}
+              totalPages={totalPages}
+              pageSize={pageSize}
+              pageSizeOptions={PAGE_SIZE_OPTIONS}
+              totalItems={filteredUsers.length}
+              startIndex={startIndex}
+              endIndex={endIndex}
+              itemsNoun="usuarios"
+              onPageChange={handlePageChange}
+              onPageSizeChange={handlePageSizeChange}
+            />
+          ) : null
+        }
       />
 
       <UserFormModal
