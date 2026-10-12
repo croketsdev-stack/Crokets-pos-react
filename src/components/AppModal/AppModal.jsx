@@ -270,7 +270,13 @@ const AppModal = ({
     <div className={styles.overlay} onClick={handleOverlayClick}>
       <div
         ref={modalRef}
-        className={`${styles.modal} ${config.className} ${styles[`size-${size}`] || ""}`}
+        className={[
+          styles.modal,
+          config.className,
+          styles[`size-${size}`],
+        ]
+          .filter(Boolean)
+          .join(" ")}
         role="dialog"
         aria-modal="true"
         aria-labelledby={title ? titleId : undefined}
