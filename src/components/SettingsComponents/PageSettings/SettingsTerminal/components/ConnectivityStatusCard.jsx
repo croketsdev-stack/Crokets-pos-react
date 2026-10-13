@@ -48,7 +48,7 @@ const ConnectivityStatusCard = ({
   connection,
   onRunDiagnostics,
 }) => {
-  const latencyMs = diagnostics?.latencyMs || null;
+  const latencyMs = diagnostics?.latencyMs ?? null;
   const latencyLevel = getLatencyLevel(latencyMs);
   const isConnected = connection === "online";
   const isChecking = connection === "checking";

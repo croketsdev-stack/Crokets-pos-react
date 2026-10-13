@@ -1,17 +1,66 @@
 import { useEffect, useMemo, useState } from "react";
 import styles from "../SettingsTerminal.module.css";
 
+const KNOWN_UPPERCASE = new Set([
+  "CDMX",
+  "CUN",
+  "QROO",
+  "MID",
+  "POS",
+  "II",
+  "III",
+  "IV",
+  "V",
+]);
+
+const LOWERCASE_PARTICLES = new Set([
+  "de",
+  "del",
+  "la",
+  "las",
+  "el",
+  "los",
+  "y",
+  "en",
+]);
+
 /**
- * Convierte un texto a Title Case (primera letra de cada palabra en mayúscula, resto minúsculas)
+ * Convierte un texto a Title Case preservando siglas fiscales conocidas,
+ * partículas intermedias (de, del, la, ...) y apellidos con apóstrofo.
  */
-export const toTitleCase = (str = "") =>
-  str
-    .toLowerCase()
-    .trim()
-    .replace(/\s+/g, " ")
-    .split(" ")
-    .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : ""))
+export const toTitleCase = (str = "") => {
+  const clean = (str || "").trim().replace(/\s+/g, " ");
+  if (!clean) return "";
+
+  const words = clean.split(" ");
+
+  return words
+    .map((word, index) => {
+      const upper = word.toUpperCase();
+      if (KNOWN_UPPERCASE.has(upper)) {
+        return upper;
+      }
+
+      const lower = word.toLowerCase();
+      if (index > 0 && LOWERCASE_PARTICLES.has(lower)) {
+        return lower;
+      }
+
+      if (word.includes("'")) {
+        return word
+          .split("'")
+          .map((part) =>
+            part
+              ? part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+              : ""
+          )
+          .join("'");
+      }
+
+      return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
+    })
     .join(" ");
+};
 
 /**
  * Normaliza una dirección comercial: mayúscula inicial y espacios limpios sin forzar Title Case
@@ -118,10 +167,18 @@ const BranchEditModal = ({
   const [formData, setFormData] = useState(() =>
     buildBranchForm(branchProfile, branch)
   );
-  const [wasOpen, setWasOpen] = useState(isOpen);
+  const [prevSource, setPrevSource] = useState({
+    isOpen,
+    branchProfile,
+    branch,
+  });
 
-  if (isOpen !== wasOpen) {
-    setWasOpen(isOpen);
+  if (
+    prevSource.isOpen !== isOpen ||
+    prevSource.branchProfile !== branchProfile ||
+    prevSource.branch !== branch
+  ) {
+    setPrevSource({ isOpen, branchProfile, branch });
     if (isOpen) {
       setFormData(buildBranchForm(branchProfile, branch));
     }
