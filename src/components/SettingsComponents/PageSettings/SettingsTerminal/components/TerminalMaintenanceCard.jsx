@@ -2,16 +2,6 @@ import broomIcon from "../../../../../assets/icons/broom-solid-full.svg";
 import styles from "../SettingsTerminal.module.css";
 import { formatBytes } from "../utils/terminalFormatters";
 
-const PROTECTED_KEYS = [
-  "supabase.auth.token",
-  "device_code",
-  "cashAmount",
-  "isLocked",
-  "cashRegistered",
-  "cachedUsername",
-  "sb-crokets-pos-auth-token",
-];
-
 const TerminalMaintenanceCard = ({
   localStorageSize,
   hasElectronBridge,
@@ -34,43 +24,69 @@ const TerminalMaintenanceCard = ({
   };
 
   return (
-    <article className={styles.card} aria-labelledby="maintenance-title">
+    <article
+      className={`${styles.card} ${styles.cardMaintenance}`}
+      aria-labelledby="maintenance-title"
+    >
       <header className={styles.cardHeader}>
         <div className={styles.cardTitleRow}>
-          <h2 id="maintenance-title" className={styles.cardTitle}>
-            Mantenimiento y rendimiento local
-          </h2>
-          <img src={broomIcon} alt="" aria-hidden="true" className={styles.icon} width="24" height="24" />
+          <div className={styles.cardTitleGroup}>
+            <span className={styles.cardHeaderIconBadge} aria-hidden="true">
+              <img src={broomIcon} alt="" />
+            </span>
+            <div className={styles.cardHeading}>
+              <h2 id="maintenance-title" className={styles.cardTitle}>
+                Mantenimiento y rendimiento local
+              </h2>
+              <p className={styles.cardDescription}>
+                Limpieza de caché, recarga e interfaz de mantenimiento
+              </p>
+            </div>
+          </div>
         </div>
-        <p className={styles.cardDescription}>
-          Limpieza de caché, recarga e interfaz de mantenimiento
-        </p>
       </header>
 
-      <dl className={styles.definitionList}>
-        <div className={styles.definitionItem}>
-          <dt className={styles.definitionTerm}>Espacio en localStorage</dt>
-          <dd className={styles.definitionValue}>{formatBytes(localStorageSize)}</dd>
+      <div className={styles.maintenanceContent}>
+        <div className={styles.maintenanceInfo}>
+          <div className={styles.metricCard}>
+            <span className={styles.metricLabel}>Espacio en localStorage</span>
+            <span className={styles.metricValue}>
+              {formatBytes(localStorageSize)}
+            </span>
+          </div>
+          <p className={styles.hint}>
+            Esta acción restablece datos temporales y tablas en caché. Tu
+            sesión, tu sucursal, la configuración de la impresora y los datos de
+            caja no se verán afectados.
+          </p>
         </div>
-      </dl>
 
-      <div className={styles.buttonRow}>
-        <button type="button" className={styles.buttonSecondary} onClick={handleClear}>
-          Limpiar datos temporales / caché
-        </button>
-        <button type="button" className={styles.buttonSecondary} onClick={handleReloadClick}>
-          Recargar interfaz
-        </button>
-        {hasElectronBridge && (
-          <button type="button" className={styles.buttonDanger} onClick={handleClose}>
-            Cerrar aplicación
+        <div className={styles.maintenanceActions}>
+          <button
+            type="button"
+            className={styles.buttonSecondary}
+            onClick={handleClear}
+          >
+            Limpiar datos temporales
           </button>
-        )}
+          <button
+            type="button"
+            className={styles.buttonSecondary}
+            onClick={handleReloadClick}
+          >
+            Recargar
+          </button>
+          {hasElectronBridge && (
+            <button
+              type="button"
+              className={styles.buttonDanger}
+              onClick={handleClose}
+            >
+              Cerrar aplicación
+            </button>
+          )}
+        </div>
       </div>
-
-      <p className={styles.hint}>
-        Al limpiar caché se preservan credenciales, tokens de sesión, device_code y datos críticos.
-      </p>
     </article>
   );
 };

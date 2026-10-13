@@ -2,7 +2,10 @@ import rotateIcon from "../../../../../assets/icons/rotate-solid-full.svg";
 import checkIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
 import warningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
 import styles from "../SettingsTerminal.module.css";
-import { formatMilliseconds, getLatencyLevel } from "../utils/terminalFormatters";
+import {
+  formatMilliseconds,
+  getLatencyLevel,
+} from "../utils/terminalFormatters";
 
 const getBadgeClass = (level) => {
   switch (level) {
@@ -17,24 +20,25 @@ const getBadgeClass = (level) => {
   }
 };
 
-const getStatusBadgeClass = (status) => {
-  switch (status) {
-    case "ok":
-      return `${styles.badge} ${styles.badgeOk}`;
-    case "warning":
-      return `${styles.badge} ${styles.badgeWarning}`;
-    case "error":
-      return `${styles.badge} ${styles.badgeError}`;
-    default:
-      return `${styles.badge} ${styles.badgeNeutral}`;
-  }
-};
-
 const getIcon = (status) => {
   if (status === "ok") {
-    return <img src={checkIcon} alt="" aria-hidden="true" className={styles.icon} />;
+    return (
+      <img
+        src={checkIcon}
+        alt=""
+        aria-hidden="true"
+        className={`${styles.icon} ${styles.iconSuccess}`}
+      />
+    );
   }
-  return <img src={warningIcon} alt="" aria-hidden="true" className={styles.icon} />;
+  return (
+    <img
+      src={warningIcon}
+      alt=""
+      aria-hidden="true"
+      className={`${styles.icon} ${styles.iconWarning}`}
+    />
+  );
 };
 
 const ConnectivityStatusCard = ({
@@ -46,26 +50,52 @@ const ConnectivityStatusCard = ({
 }) => {
   const latencyMs = diagnostics?.latencyMs || null;
   const latencyLevel = getLatencyLevel(latencyMs);
+  const isConnected = connection === "online";
+  const isChecking = connection === "checking";
+
+  const generalStatusText = isConnected
+    ? "Conectado a Supabase"
+    : isChecking
+      ? "Verificando conexión..."
+      : "Sin conexión con Supabase";
+
+  const generalStatusClass = isConnected
+    ? styles.badgeOk
+    : isChecking
+      ? styles.badgeWarning
+      : styles.badgeError;
 
   return (
     <article className={styles.card} aria-labelledby="connectivity-title">
       <header className={styles.cardHeader}>
         <div className={styles.cardTitleRow}>
-          <h2 id="connectivity-title" className={styles.cardTitle}>
-            Monitor de conectividad y salud
-          </h2>
-          <img src={rotateIcon} alt="" aria-hidden="true" className={styles.icon} width="24" height="24" />
+          <div className={styles.cardTitleGroup}>
+            <span className={styles.cardHeaderIconBadge} aria-hidden="true">
+              <img src={rotateIcon} alt="" />
+            </span>
+            <div className={styles.cardHeading}>
+              <h2 id="connectivity-title" className={styles.cardTitle}>
+                Monitor de conectividad y salud
+              </h2>
+              <p className={styles.cardDescription}>
+                Estado de red, latencia y verificación de servicios
+              </p>
+            </div>
+          </div>
         </div>
-        <p className={styles.cardDescription}>
-          Estado de red, latencia y verificación de servicios
-        </p>
       </header>
 
       <dl className={styles.definitionList}>
         <div className={styles.definitionItem}>
           <dt className={styles.definitionTerm}>Estado de red local</dt>
           <dd className={styles.definitionValue}>
-            <span className={isOnline ? `${styles.badge} ${styles.badgeOk}` : `${styles.badge} ${styles.badgeError}`}>
+            <span
+              className={
+                isOnline
+                  ? `${styles.badge} ${styles.badgeOk}`
+                  : `${styles.badge} ${styles.badgeError}`
+              }
+            >
               {isOnline ? "Conectado" : "Sin conexión"}
             </span>
           </dd>
@@ -81,22 +111,31 @@ const ConnectivityStatusCard = ({
         <div className={styles.definitionItem}>
           <dt className={styles.definitionTerm}>Estado general</dt>
           <dd className={styles.definitionValue}>
-            <span role="status">{connection === "online" ? "Conectado a Supabase" : connection === "checking" ? "Verificando conexión..." : "Sin conexión con Supabase"}</span>
+            <span
+              role="status"
+              className={`${styles.badge} ${generalStatusClass}`}
+            >
+              {generalStatusText}
+            </span>
           </dd>
         </div>
       </dl>
 
       <section aria-labelledby="services-checklist-title">
-        <h3 id="services-checklist-title" className={styles.cardTitle} style={{ fontSize: "1rem" }}>
+        <h3 id="services-checklist-title" className={styles.sectionTitle}>
           Checklist de servicios
         </h3>
         <ul className={styles.checklist}>
           {diagnostics?.services?.map((service) => (
             <li key={service.id} className={styles.checklistItem}>
-              <span className={styles.iconWrapper}>{getIcon(service.status)}</span>
+              <span className={styles.iconWrapper}>
+                {getIcon(service.status)}
+              </span>
               <div className={styles.checklistContent}>
                 <span className={styles.checklistLabel}>{service.label}</span>
-                <span className={styles.checklistMessage}>{service.message}</span>
+                <span className={styles.checklistMessage}>
+                  {service.message}
+                </span>
               </div>
             </li>
           ))}
@@ -104,7 +143,18 @@ const ConnectivityStatusCard = ({
       </section>
 
       <div className={styles.buttonRow}>
-        <button type="button" className={styles.button} onClick={onRunDiagnostics} disabled={diagnosticsLoading}>
+        <button
+          type="button"
+          className={styles.buttonSecondary}
+          onClick={onRunDiagnostics}
+          disabled={diagnosticsLoading}
+        >
+          <img
+            src={rotateIcon}
+            alt=""
+            aria-hidden="true"
+            className={styles.buttonIcon}
+          />
           {diagnosticsLoading ? "Ejecutando..." : "Ejecutar diagnóstico"}
         </button>
       </div>

@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { useBranch } from "../../../../contexts/BranchContext";
-import { useAuth } from "../../../../contexts/AuthContext";
 import { useSettingsTerminal } from "./hooks/useSettingsTerminal";
 import { updateBranchContact } from "./services/branchProfileService";
 import styles from "./SettingsTerminal.module.css";
@@ -12,8 +11,7 @@ import DisplaySettingsCard from "./components/DisplaySettingsCard";
 import TerminalMaintenanceCard from "./components/TerminalMaintenanceCard";
 
 const SettingsTerminal = () => {
-  const { branch } = useBranch();
-  const { user } = useAuth();
+  const { branch, setBranch } = useBranch();
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [savingBranch, setSavingBranch] = useState(false);
   const [branchUpdateFeedback, setBranchUpdateFeedback] = useState(null);
@@ -28,10 +26,6 @@ const SettingsTerminal = () => {
     isOnline,
     diagnostics,
     diagnosticsLoading,
-    alias,
-    aliasLoading,
-    aliasSaving,
-    aliasFeedback,
     copyFeedback,
     isAdmin,
     fullscreen,
@@ -42,14 +36,13 @@ const SettingsTerminal = () => {
     handleZoomChange,
     handleZoomSet,
     handleZoomReset,
-    handleReconnect,
     handleRunDiagnostics,
-    handleSaveAlias,
     handleCopyDeviceCode,
     handleToggleFullscreen,
     handleClearLocalStorage,
     handleReload,
     handleCloseApp,
+    refreshBranchProfile,
     clearFeedbacks,
   } = useSettingsTerminal(branch);
 
@@ -68,11 +61,20 @@ const SettingsTerminal = () => {
     setSavingBranch(true);
     const result = await updateBranchContact(branch.id, updates);
     if (result.success) {
-      setBranchUpdateFeedback({ type: "success", message: "Datos de sucursal actualizados correctamente." });
+      setBranchUpdateFeedback({
+        type: "success",
+        message: "Datos de sucursal actualizados correctamente.",
+      });
       setIsEditModalOpen(false);
-      window.location.reload();
+      if (result.data) {
+        setBranch({ ...branch, ...result.data });
+      }
+      refreshBranchProfile();
     } else {
-      setBranchUpdateFeedback({ type: "error", message: result.error || "Error al actualizar sucursal." });
+      setBranchUpdateFeedback({
+        type: "error",
+        message: result.error || "Error al actualizar sucursal.",
+      });
     }
     setSavingBranch(false);
   };
@@ -108,13 +110,8 @@ const SettingsTerminal = () => {
         />
         <TerminalDeviceCard
           device={device}
-          alias={alias}
-          aliasLoading={aliasLoading}
-          aliasSaving={aliasSaving}
-          aliasFeedback={aliasFeedback}
           copyFeedback={copyFeedback}
           cashSession={cashSession}
-          onSaveAlias={handleSaveAlias}
           onCopyDeviceCode={handleCopyDeviceCode}
         />
         <ConnectivityStatusCard
@@ -148,6 +145,7 @@ const SettingsTerminal = () => {
       <BranchEditModal
         isOpen={isEditModalOpen}
         branchProfile={branchProfile}
+        branch={branch}
         onClose={handleCloseEdit}
         onSave={handleSaveBranch}
         saving={savingBranch}

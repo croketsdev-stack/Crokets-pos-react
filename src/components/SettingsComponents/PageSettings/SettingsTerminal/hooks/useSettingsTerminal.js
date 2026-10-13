@@ -1,13 +1,24 @@
 import { useEffect, useState, useCallback, useRef } from "react";
-import { fetchDeviceCode, readZoomFactor, applyZoomFactor, resetZoom } from "../../../../../services/terminalSettingsService";
+import {
+  fetchDeviceCode,
+  readZoomFactor,
+  applyZoomFactor,
+  resetZoom,
+} from "../../../../../services/terminalSettingsService";
 import { fetchActiveCashSession } from "../../../../../services/cashRegisterService";
-import { getTerminalAlias, saveTerminalAlias } from "../services/terminalAliasService";
-import { runDiagnostics, checkOnlineStatus } from "../services/terminalDiagnosticsService";
+import {
+  runDiagnostics,
+  checkOnlineStatus,
+} from "../services/terminalDiagnosticsService";
 import { fetchBranchProfile } from "../services/branchProfileService";
+import {
+  ZOOM_STEPS,
+  findNextZoomStep,
+  isProtectedStorageKey,
+  getLocalStorageSize,
+} from "../utils/terminalHelpers";
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { checkUserIsAdmin } from "../../../../../lib/permissionsService";
-
-const DEFAULT_ZOOM_CHIPS = [0.8, 0.9, 1.0, 1.1, 1.25, 1.5];
 
 const hasElectronBridge = () =>
   typeof window !== "undefined" &&
@@ -15,23 +26,24 @@ const hasElectronBridge = () =>
 
 export const useSettingsTerminal = (branch) => {
   const { user } = useAuth();
+  const branchId = branch?.id;
   const [device, setDevice] = useState({ status: "loading", code: null });
   const [connection, setConnection] = useState("checking");
   const [zoomFactor, setZoomFactor] = useState(1);
   const [zoomFeedback, setZoomFeedback] = useState(null);
   const [branchProfile, setBranchProfile] = useState(null);
   const [cashSession, setCashSession] = useState(null);
-  const [isOnline, setIsOnline] = useState(() => (typeof navigator !== "undefined" ? navigator.onLine : true));
+  const [isOnline, setIsOnline] = useState(() =>
+    typeof navigator !== "undefined" ? navigator.onLine : true
+  );
   const [diagnostics, setDiagnostics] = useState(null);
   const [diagnosticsLoading, setDiagnosticsLoading] = useState(false);
-  const [alias, setAlias] = useState(null);
-  const [aliasLoading, setAliasLoading] = useState(false);
-  const [aliasSaving, setAliasSaving] = useState(false);
-  const [aliasFeedback, setAliasFeedback] = useState(null);
   const [copyFeedback, setCopyFeedback] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [fullscreen, setFullscreen] = useState(() => (typeof document !== "undefined" ? !!document.fullscreenElement : false));
-  const [localStorageSize, setLocalStorageSize] = useState(0);
+  const [fullscreen, setFullscreen] = useState(() =>
+    typeof document !== "undefined" ? !!document.fullscreenElement : false
+  );
+  const [localStorageSize, setLocalStorageSize] = useState(getLocalStorageSize);
   const [screenInfo, setScreenInfo] = useState({
     width: typeof window !== "undefined" ? window.screen?.width : null,
     height: typeof window !== "undefined" ? window.screen?.height : null,
@@ -43,7 +55,6 @@ export const useSettingsTerminal = (branch) => {
 
   const clearFeedbacks = useCallback(() => {
     setZoomFeedback(null);
-    setAliasFeedback(null);
     setCopyFeedback(null);
   }, []);
 
@@ -85,21 +96,31 @@ export const useSettingsTerminal = (branch) => {
     };
   }, []);
 
+  const loadBranchProfile = useCallback(async (branchId) => {
+    if (!branchId) return;
+    const result = await fetchBranchProfile(branchId);
+    if (mountedRef.current) {
+      setBranchProfile(result.success ? result.data : null);
+    }
+  }, []);
+
   useEffect(() => {
-    if (!branch?.id) return;
+    if (!branchId) return;
 
-    fetchBranchProfile(branch.id).then((result) => {
-      if (mountedRef.current) {
-        setBranchProfile(result.success ? result.data : null);
-      }
-    });
+    loadBranchProfile(branchId);
 
-    fetchActiveCashSession(branch.id).then((result) => {
+    fetchActiveCashSession(branchId).then((result) => {
       if (mountedRef.current) {
         setCashSession(result.success ? result.data : null);
       }
     });
-  }, [branch?.id]);
+  }, [branchId, loadBranchProfile]);
+
+  const refreshBranchProfile = useCallback(() => {
+    if (branchId) {
+      loadBranchProfile(branchId);
+    }
+  }, [branchId, loadBranchProfile]);
 
   useEffect(() => {
     const handleOnline = () => setIsOnline(true);
@@ -139,59 +160,49 @@ export const useSettingsTerminal = (branch) => {
     });
   }, []);
 
-  useEffect(() => {
-    if (device.code) {
-      setAliasLoading(true);
-      getTerminalAlias(device.code).then((result) => {
-        if (mountedRef.current) {
-          setAlias(result.alias);
-          setAliasLoading(false);
-        }
-      });
-    }
-  }, [device.code]);
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.localStorage) {
-      let total = 0;
-      for (let i = 0; i < window.localStorage.length; i++) {
-        const key = window.localStorage.key(i);
-        const value = key ? window.localStorage.getItem(key) : "";
-        total += (key?.length || 0) + (value?.length || 0);
+  const handleZoomChange = useCallback(
+    async (direction) => {
+      clearFeedbacks();
+      const nextFactor = findNextZoomStep(zoomFactor, direction);
+      if (Math.abs(nextFactor - zoomFactor) < 0.001) {
+        setZoomFeedback({
+          type: "success",
+          message: `Zoom de la ventana: ${Math.round(zoomFactor * 100)}%.`,
+        });
+        return;
       }
-      setLocalStorageSize(total);
-    }
-  }, []);
+      const result = await applyZoomFactor(nextFactor);
+      if (!mountedRef.current) return;
+      if (!result.success) {
+        setZoomFeedback({ type: "error", message: result.error });
+        return;
+      }
+      setZoomFactor(result.zoomFactor);
+      setZoomFeedback({
+        type: "success",
+        message: `Zoom de la ventana: ${Math.round(result.zoomFactor * 100)}%.`,
+      });
+    },
+    [zoomFactor, clearFeedbacks]
+  );
 
-  const handleZoomChange = useCallback(async (delta) => {
-    clearFeedbacks();
-    const result = await applyZoomFactor(zoomFactor + delta);
-    if (!mountedRef.current) return;
-    if (!result.success) {
-      setZoomFeedback({ type: "error", message: result.error });
-      return;
-    }
-    setZoomFactor(result.zoomFactor);
-    setZoomFeedback({
-      type: "success",
-      message: `Zoom de la ventana: ${Math.round(result.zoomFactor * 100)}%.`,
-    });
-  }, [zoomFactor, clearFeedbacks]);
-
-  const handleZoomSet = useCallback(async (factor) => {
-    clearFeedbacks();
-    const result = await applyZoomFactor(factor);
-    if (!mountedRef.current) return;
-    if (!result.success) {
-      setZoomFeedback({ type: "error", message: result.error });
-      return;
-    }
-    setZoomFactor(result.zoomFactor);
-    setZoomFeedback({
-      type: "success",
-      message: `Zoom de la ventana: ${Math.round(result.zoomFactor * 100)}%.`,
-    });
-  }, [clearFeedbacks]);
+  const handleZoomSet = useCallback(
+    async (factor) => {
+      clearFeedbacks();
+      const result = await applyZoomFactor(factor);
+      if (!mountedRef.current) return;
+      if (!result.success) {
+        setZoomFeedback({ type: "error", message: result.error });
+        return;
+      }
+      setZoomFactor(result.zoomFactor);
+      setZoomFeedback({
+        type: "success",
+        message: `Zoom de la ventana: ${Math.round(result.zoomFactor * 100)}%.`,
+      });
+    },
+    [clearFeedbacks]
+  );
 
   const handleZoomReset = useCallback(async () => {
     clearFeedbacks();
@@ -208,16 +219,6 @@ export const useSettingsTerminal = (branch) => {
     });
   }, [clearFeedbacks]);
 
-  const handleReconnect = useCallback(async () => {
-    setConnection("checking");
-    const result = await runDiagnostics();
-    if (mountedRef.current) {
-      setDiagnostics(result);
-      setConnection(result.overallOk ? "online" : "offline");
-      setIsOnline(checkOnlineStatus());
-    }
-  }, []);
-
   const handleRunDiagnostics = useCallback(async () => {
     setDiagnosticsLoading(true);
     clearFeedbacks();
@@ -230,23 +231,6 @@ export const useSettingsTerminal = (branch) => {
     }
   }, [clearFeedbacks]);
 
-  const handleSaveAlias = useCallback(async (newAlias) => {
-    if (!device.code) return;
-    setAliasSaving(true);
-    clearFeedbacks();
-    const result = await saveTerminalAlias(device.code, newAlias);
-    if (mountedRef.current) {
-      if (result.success) {
-        setAlias(result.alias);
-        setAliasFeedback({ type: "success", message: "Alias guardado correctamente." });
-      } else {
-        setAlias(result.alias);
-        setAliasFeedback({ type: "error", message: result.error || "Error al guardar alias." });
-      }
-      setAliasSaving(false);
-    }
-  }, [device.code, clearFeedbacks]);
-
   const handleCopyDeviceCode = useCallback(async () => {
     if (!device.code) return;
     clearFeedbacks();
@@ -254,15 +238,28 @@ export const useSettingsTerminal = (branch) => {
       if (typeof navigator !== "undefined" && navigator.clipboard) {
         await navigator.clipboard.writeText(device.code);
       }
-      setCopyFeedback({ type: "success", message: "Código copiado al portapapeles" });
+      setCopyFeedback({
+        type: "success",
+        message: "Código copiado al portapapeles",
+      });
     } catch (error) {
+      console.error("Error al copiar el código del dispositivo:", error);
       setCopyFeedback({ type: "error", message: "Error al copiar código" });
     }
   }, [device.code, clearFeedbacks]);
 
   const handleToggleFullscreen = useCallback(async () => {
-    if (typeof document === "undefined") return;
     try {
+      if (hasElectronBridge()) {
+        const result = await window.electronAPI.invoke("toggle-fullscreen");
+        if (mountedRef.current && result) {
+          setFullscreen(!!result.fullscreen);
+        }
+        return;
+      }
+
+      if (typeof document === "undefined") return;
+
       if (!document.fullscreenElement) {
         await document.documentElement.requestFullscreen();
         setFullscreen(true);
@@ -271,36 +268,25 @@ export const useSettingsTerminal = (branch) => {
         setFullscreen(false);
       }
     } catch (error) {
-      setZoomFeedback({ type: "error", message: "Error al cambiar modo pantalla completa" });
+      console.error("Error al cambiar modo pantalla completa:", error);
+      setZoomFeedback({
+        type: "error",
+        message: "Error al cambiar modo pantalla completa",
+      });
     }
   }, []);
 
   const handleClearLocalStorage = useCallback(() => {
     if (typeof window === "undefined" || !window.localStorage) return;
-    const protectedKeys = [
-      "supabase.auth.token",
-      "device_code",
-      "cashAmount",
-      "isLocked",
-      "cashRegistered",
-      "cachedUsername",
-      "sb-crokets-pos-auth-token",
-    ];
     const keysToRemove = [];
     for (let i = 0; i < window.localStorage.length; i++) {
       const key = window.localStorage.key(i);
-      if (key && !protectedKeys.includes(key)) {
+      if (key && !isProtectedStorageKey(key)) {
         keysToRemove.push(key);
       }
     }
     keysToRemove.forEach((key) => window.localStorage.removeItem(key));
-    let total = 0;
-    for (let i = 0; i < window.localStorage.length; i++) {
-      const key = window.localStorage.key(i);
-      const value = key ? window.localStorage.getItem(key) : "";
-      total += (key?.length || 0) + (value?.length || 0);
-    }
-    setLocalStorageSize(total);
+    setLocalStorageSize(getLocalStorageSize());
   }, []);
 
   const handleReload = useCallback(() => {
@@ -329,28 +315,23 @@ export const useSettingsTerminal = (branch) => {
     isOnline,
     diagnostics,
     diagnosticsLoading,
-    alias,
-    aliasLoading,
-    aliasSaving,
-    aliasFeedback,
     copyFeedback,
     isAdmin,
     fullscreen,
     localStorageSize,
     screenInfo,
-    zoomChips: DEFAULT_ZOOM_CHIPS,
+    zoomChips: ZOOM_STEPS,
     hasElectronBridge: hasElectronBridge(),
     handleZoomChange,
     handleZoomSet,
     handleZoomReset,
-    handleReconnect,
     handleRunDiagnostics,
-    handleSaveAlias,
     handleCopyDeviceCode,
     handleToggleFullscreen,
     handleClearLocalStorage,
     handleReload,
     handleCloseApp,
+    refreshBranchProfile,
     clearFeedbacks,
   };
 };
