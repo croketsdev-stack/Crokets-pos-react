@@ -171,6 +171,39 @@ describe("electron ticketPrintService", () => {
 
       expect(html).toContain("size: 80mm 300mm; margin: 0");
     });
+
+    it("agrega los saltos de linea finales solicitados en options.feedLines", () => {
+      const html = buildTicketPrintDocument(
+        "LINEA",
+        resolveTicketPrintProfile("58mm"),
+        { feedLines: 3 }
+      );
+
+      expect(html).toContain("<pre>LINEA\n\n\n</pre>");
+    });
+
+    it("acepta feedLines 0 sin espaciado extra al final", () => {
+      const html = buildTicketPrintDocument(
+        "LINEA",
+        resolveTicketPrintProfile("58mm"),
+        { feedLines: 0 }
+      );
+
+      expect(html).toContain("<pre>LINEA</pre>");
+    });
+
+    it("normaliza feedLines invalidos al default de 2", () => {
+      expect(
+        buildTicketPrintDocument("X", resolveTicketPrintProfile("58mm"), {
+          feedLines: "texto",
+        })
+      ).toContain("<pre>X\n\n</pre>");
+      expect(
+        buildTicketPrintDocument("X", resolveTicketPrintProfile("58mm"), {
+          feedLines: null,
+        })
+      ).toContain("<pre>X\n\n</pre>");
+    });
   });
 
   describe("loadTicketDocument", () => {

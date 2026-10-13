@@ -105,6 +105,24 @@ describe("printSettingsService", () => {
     expect(invalid).toEqual({ success: true, copies: 1 });
   });
 
+  it("trunca fracciones y evita que un valor < 1 persista como 0 en copias", () => {
+    const fractional = saveTicketCopies(0.5);
+    expect(fractional).toEqual({ success: true, copies: 1 });
+    expect(getTicketCopies()).toBe(1);
+
+    const nearOne = saveTicketCopies(1.9);
+    expect(nearOne).toEqual({ success: true, copies: 1 });
+    expect(getTicketCopies()).toBe(1);
+
+    const validFraction = saveTicketCopies(3.7);
+    expect(validFraction).toEqual({ success: true, copies: 3 });
+    expect(getTicketCopies()).toBe(3);
+
+    const negative = saveTicketCopies(-2);
+    expect(negative).toEqual({ success: true, copies: 1 });
+    expect(getTicketCopies()).toBe(1);
+  });
+
   it("gestiona los saltos de línea de corte acotándolos entre 1 y 5 con default 2", () => {
     expect(getTicketFeedLines()).toBe(2);
 
@@ -120,6 +138,24 @@ describe("printSettingsService", () => {
     // Menor a 1 se normaliza a 2 (default)
     const clampedMin = saveTicketFeedLines(0);
     expect(clampedMin).toEqual({ success: true, feedLines: 2 });
+    expect(getTicketFeedLines()).toBe(2);
+  });
+
+  it("trunca fracciones y evita que un valor < 1 persista como 0 en saltos de línea", () => {
+    const fractional = saveTicketFeedLines(0.5);
+    expect(fractional).toEqual({ success: true, feedLines: 2 });
+    expect(getTicketFeedLines()).toBe(2);
+
+    const nearOne = saveTicketFeedLines(1.4);
+    expect(nearOne).toEqual({ success: true, feedLines: 1 });
+    expect(getTicketFeedLines()).toBe(1);
+
+    const validFraction = saveTicketFeedLines(4.4);
+    expect(validFraction).toEqual({ success: true, feedLines: 4 });
+    expect(getTicketFeedLines()).toBe(4);
+
+    const negative = saveTicketFeedLines(-1);
+    expect(negative).toEqual({ success: true, feedLines: 2 });
     expect(getTicketFeedLines()).toBe(2);
   });
 });

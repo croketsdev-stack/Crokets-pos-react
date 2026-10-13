@@ -46,13 +46,10 @@ export const buildHeaderSection = (branch = {}, customization = null) => {
 
   if (customization) {
     pushCustomHeaderLines(lines, customization.headerSlogan);
+    pushCustomHeaderLines(lines, customization.fiscalInfo);
   }
 
   lines.push(centerText(branchName.toUpperCase()));
-
-  if (customization) {
-    pushCustomHeaderLines(lines, customization.fiscalInfo);
-  }
 
   if (customization?.showBranchAddress !== false) {
     const branchAddressLines = formatBranchAddressLines(branch);
