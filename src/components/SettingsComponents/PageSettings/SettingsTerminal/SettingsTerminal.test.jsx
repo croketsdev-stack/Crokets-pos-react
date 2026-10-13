@@ -28,11 +28,47 @@ const { useBranch } = vi.hoisted(() => ({ useBranch: vi.fn() }));
 
 vi.mock("../../../../contexts/BranchContext", () => ({ useBranch }));
 
+const { useAuth } = vi.hoisted(() => ({ useAuth: vi.fn() }));
+vi.mock("../../../../contexts/AuthContext", () => ({ useAuth }));
+
+const { checkUserIsAdmin } = vi.hoisted(() => ({ checkUserIsAdmin: vi.fn() }));
+vi.mock("../../../../lib/permissionsService", () => ({ checkUserIsAdmin }));
+
+const { fetchActiveCashSession } = vi.hoisted(() => ({
+  fetchActiveCashSession: vi.fn(),
+}));
+vi.mock("../../../../services/cashRegisterService", () => ({
+  fetchActiveCashSession,
+}));
+
+const { runDiagnostics, checkOnlineStatus, checkElectronBridge } = vi.hoisted(
+  () => ({
+    runDiagnostics: vi.fn(),
+    checkOnlineStatus: vi.fn(),
+    checkElectronBridge: vi.fn(),
+  })
+);
+vi.mock("./services/terminalDiagnosticsService", () => ({
+  runDiagnostics,
+  checkOnlineStatus,
+  checkElectronBridge,
+}));
+
+const { fetchBranchProfile, updateBranchContact } = vi.hoisted(() => ({
+  fetchBranchProfile: vi.fn(),
+  updateBranchContact: vi.fn(),
+}));
+vi.mock("./services/branchProfileService", () => ({
+  fetchBranchProfile,
+  updateBranchContact,
+}));
+
 describe("SettingsTerminal", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useBranch.mockReturnValue({
       branch: { id: "b1", code: "MID", name: "Mérida" },
+      setBranch: vi.fn(),
     });
     fetchDeviceCode.mockResolvedValue({
       success: true,
@@ -49,13 +85,31 @@ describe("SettingsTerminal", () => {
       zoomFactor: 1,
       error: null,
     });
+    useAuth.mockReturnValue({ user: { id: "u1" } });
+    checkUserIsAdmin.mockResolvedValue(false);
+    fetchActiveCashSession.mockResolvedValue({ success: true, data: null });
+    runDiagnostics.mockResolvedValue({
+      success: true,
+      overallOk: true,
+      online: true,
+      latencyMs: 50,
+      services: [],
+    });
+    checkOnlineStatus.mockReturnValue(true);
+    checkElectronBridge.mockReturnValue(false);
+    fetchBranchProfile.mockResolvedValue({
+      success: true,
+      data: { id: "b1", code: "MID", name: "Mérida" },
+    });
+    updateBranchContact.mockResolvedValue({ success: true, data: {} });
   });
 
   it("muestra el código del dispositivo, la sucursal y el estado de conexión", async () => {
     render(<SettingsTerminal />);
 
     expect(await screen.findByText("pos-01")).toBeTruthy();
-    expect(screen.getByText("MID - Mérida")).toBeTruthy();
+    expect(screen.getByText("MID")).toBeTruthy();
+    expect(screen.getByText("Mérida")).toBeTruthy();
     expect(await screen.findByText("Conectado a Supabase")).toBeTruthy();
   });
 
@@ -64,6 +118,13 @@ describe("SettingsTerminal", () => {
       success: false,
       connected: false,
       error: "timeout",
+    });
+    runDiagnostics.mockResolvedValue({
+      success: true,
+      overallOk: false,
+      online: false,
+      latencyMs: null,
+      services: [],
     });
 
     render(<SettingsTerminal />);
@@ -115,17 +176,21 @@ describe("SettingsTerminal", () => {
 
     await screen.findByText("Conectado a Supabase");
 
-    checkSupabaseConnection.mockClear();
-    checkSupabaseConnection.mockResolvedValue({
+    runDiagnostics.mockClear();
+    runDiagnostics.mockResolvedValue({
       success: true,
-      connected: true,
-      error: null,
+      overallOk: true,
+      online: true,
+      latencyMs: 50,
+      services: [],
     });
 
-    fireEvent.click(screen.getByRole("button", { name: "Revisar conexión" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ejecutar diagnóstico" })
+    );
 
     await waitFor(() => {
-      expect(checkSupabaseConnection).toHaveBeenCalledTimes(1);
+      expect(runDiagnostics).toHaveBeenCalled();
     });
   });
 });

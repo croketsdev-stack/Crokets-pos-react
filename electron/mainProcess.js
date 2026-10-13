@@ -211,6 +211,16 @@ function registerIpcHandlers({
     return { zoomFactor, contentBounds, state };
   });
 
+  ipcMain.handle("toggle-fullscreen", async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (win && !win.isDestroyed()) {
+      const next = !win.isFullScreen();
+      win.setFullScreen(next);
+      return { success: true, fullscreen: next };
+    }
+    return { success: false, fullscreen: false };
+  });
+
   // Imprime el texto del ticket. Delega el trabajo al servicio de impresion y solo decide
   // aqui si el sistema tiene una impresora a la que enviarlo.
   ipcMain.handle("print-ticket", async (event, payload) => {
