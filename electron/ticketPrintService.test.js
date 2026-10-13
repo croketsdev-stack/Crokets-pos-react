@@ -6,6 +6,7 @@ import {
   escapeHtml,
   listPrinters,
   loadTicketDocument,
+  openCashDrawer,
   printTicket,
   resolvePrintAvailability,
   resolveTicketPrintProfile,
@@ -159,7 +160,7 @@ describe("electron ticketPrintService", () => {
       expect(html).toContain("size: 58mm 300mm; margin: 0");
       expect(html).toContain("Courier New");
       expect(html).toContain("font-size: 9pt");
-      expect(html).toContain("<pre>LINEA &lt;1&gt;\nLINEA 2</pre>");
+      expect(html).toContain("<pre>LINEA &lt;1&gt;\nLINEA 2\n\n</pre>");
     });
 
     it("cambia el ancho de pagina segun el perfil de 80mm", () => {
@@ -169,6 +170,39 @@ describe("electron ticketPrintService", () => {
       );
 
       expect(html).toContain("size: 80mm 300mm; margin: 0");
+    });
+
+    it("agrega los saltos de linea finales solicitados en options.feedLines", () => {
+      const html = buildTicketPrintDocument(
+        "LINEA",
+        resolveTicketPrintProfile("58mm"),
+        { feedLines: 3 }
+      );
+
+      expect(html).toContain("<pre>LINEA\n\n\n</pre>");
+    });
+
+    it("acepta feedLines 0 sin espaciado extra al final", () => {
+      const html = buildTicketPrintDocument(
+        "LINEA",
+        resolveTicketPrintProfile("58mm"),
+        { feedLines: 0 }
+      );
+
+      expect(html).toContain("<pre>LINEA</pre>");
+    });
+
+    it("normaliza feedLines invalidos al default de 2", () => {
+      expect(
+        buildTicketPrintDocument("X", resolveTicketPrintProfile("58mm"), {
+          feedLines: "texto",
+        })
+      ).toContain("<pre>X\n\n</pre>");
+      expect(
+        buildTicketPrintDocument("X", resolveTicketPrintProfile("58mm"), {
+          feedLines: null,
+        })
+      ).toContain("<pre>X\n\n</pre>");
     });
   });
 
@@ -261,7 +295,7 @@ describe("electron ticketPrintService", () => {
       );
       expect(
         decodeURIComponent(printWindow.loadURL.mock.calls[0][0])
-      ).toContain("<pre>TICKET</pre>");
+      ).toContain("<pre>TICKET\n\n</pre>");
       expect(printWindow.webContents.print).toHaveBeenCalledWith(
         expect.objectContaining({
           silent: true,
@@ -416,6 +450,49 @@ describe("electron ticketPrintService", () => {
         message: "No hay ninguna impresora configurada en el sistema.",
         error: "NO_PRINTER_AVAILABLE",
       });
+    });
+  });
+
+  describe("openCashDrawer", () => {
+    it("falla honestamente cuando el sistema no reporta impresoras", async () => {
+      const webContents = {
+        getPrintersAsync: vi.fn(() => Promise.resolve([])),
+      };
+
+      await expect(openCashDrawer({ webContents })).resolves.toEqual({
+        success: false,
+        message:
+          "No se detectó ninguna impresora térmica conectada para abrir el cajón.",
+        error: "NO_PRINTER_AVAILABLE",
+      });
+      expect(webContents.getPrintersAsync).toHaveBeenCalled();
+    });
+
+    it("confirma la apertura cuando hay una impresora conectada", async () => {
+      const webContents = {
+        getPrintersAsync: vi.fn(() => Promise.resolve([{ name: "Termica" }])),
+      };
+
+      await expect(openCashDrawer({ webContents })).resolves.toEqual({
+        success: true,
+        message: "Pulso de apertura enviado al cajón de dinero.",
+        error: null,
+      });
+    });
+
+    it("omite la consulta al sistema cuando se elige una impresora explicita", async () => {
+      const webContents = {
+        getPrintersAsync: vi.fn(() => Promise.resolve([])),
+      };
+
+      await expect(
+        openCashDrawer({ webContents, printerDeviceName: "  Termica  " })
+      ).resolves.toEqual({
+        success: true,
+        message: "Pulso de apertura enviado al cajón de dinero.",
+        error: null,
+      });
+      expect(webContents.getPrintersAsync).not.toHaveBeenCalled();
     });
   });
 });

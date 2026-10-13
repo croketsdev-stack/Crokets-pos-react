@@ -9,6 +9,14 @@ import MixedIcon from "../../../../assets/icons/coins-solid-full.svg";
 import TerminalIcon from "../../../../assets/icons/credit-card-solid-full.svg";
 import TransferIcon from "../../../../assets/icons/building-columns-solid-full.svg";
 import XmarkIcon from "../../../../assets/icons/xmark-solid-full.svg";
+import {
+  getPrintMode,
+  PRINT_MODE_CONFIRM,
+} from "../../../../services/printSettingsService";
+import {
+  getCashOperationSettings,
+  triggerCashDrawerKick,
+} from "../../../../services/cashOperationSettingsService";
 
 const toNumber = (val) =>
   !val || String(val).trim() === ""
@@ -31,7 +39,12 @@ const PaymentModal = memo(
       useState("Efectivo");
     const [paidAmount, setPaidAmount] = useState("");
     const [dollarAmount, setDollarAmount] = useState("");
-    const [exchangeRate, setExchangeRate] = useState("18.50");
+    const [exchangeRate, setExchangeRate] = useState(() => {
+      const cashOps = getCashOperationSettings();
+      return cashOps.defaultExchangeRate
+        ? String(cashOps.defaultExchangeRate)
+        : "18.50";
+    });
     const [mixedPayments, setMixedPayments] = useState({
       efectivo: "",
       tarjeta: "",
@@ -41,6 +54,9 @@ const PaymentModal = memo(
     const [isNotesModalOpen, setNotesModalOpen] = useState(false);
     const [saleNotes, setSaleNotes] = useState("");
     const [processing, setProcessing] = useState(false);
+    const [cashOpSettings, setCashOpSettings] = useState(() =>
+      getCashOperationSettings()
+    );
     const [appModal, setAppModal] = useState({
       isOpen: false,
       type: "warning",
@@ -55,7 +71,12 @@ const PaymentModal = memo(
     const numericExchangeRate = toNumber(exchangeRate);
 
     const closeAppModal = useCallback(
-      () => setAppModal((p) => ({ ...p, isOpen: false })),
+      () =>
+        setAppModal((prev) => ({
+          ...prev,
+          isOpen: false,
+          onConfirmAction: undefined,
+        })),
       []
     );
     const showAppWarning = useCallback(
@@ -116,12 +137,32 @@ const PaymentModal = memo(
     // Variables dinámicas para la UI del cambio/faltante
     const formattedChange =
       change < 0 ? `-$${Math.abs(change).toFixed(2)}` : `$${change.toFixed(2)}`;
-    const changeLabel = change < 0 ? "Faltante:" : "Su Cambio:";
+    const changeLabel =
+      change < 0
+        ? "Faltante:"
+        : ["Dolares", "Mixto"].includes(selectedPaymentMethod)
+          ? "Su Cambio (MXN):"
+          : "Su Cambio:";
+
+    // En Mixto el cajón solo debe abrirse si entra dinero fisico; un cobro
+    // 100% con tarjeta no lo dispara bajo la politica `cash_only`.
+    const hasPhysicalCash =
+      selectedPaymentMethod === "Efectivo" ||
+      selectedPaymentMethod === "Dolares" ||
+      (selectedPaymentMethod === "Mixto" &&
+        (toNumber(mixedPayments.efectivo) > 0 ||
+          toNumber(mixedPayments.dolares) > 0));
 
     const resetModalState = useCallback(() => {
+      const cashOps = getCashOperationSettings();
       setPaidAmount("");
       setDollarAmount("");
-      setExchangeRate("18.50");
+      setExchangeRate(
+        cashOps.defaultExchangeRate
+          ? String(cashOps.defaultExchangeRate)
+          : "18.50"
+      );
+      setCashOpSettings(cashOps);
       setMixedPayments({ efectivo: "", tarjeta: "", dolares: "" });
       setTrackingCode("");
       setSaleNotes("");
@@ -220,6 +261,24 @@ const PaymentModal = memo(
         try {
           setProcessing(true);
           if (onProcessPayment ? await onProcessPayment(paymentData) : true) {
+            try {
+              const settings = cashOpSettings || getCashOperationSettings();
+              const enabled = settings.cashDrawerEnabled;
+              const trigger = settings.cashDrawerTrigger || "cash_only";
+              let shouldTrigger = false;
+              if (enabled) {
+                if (trigger === "all_sales") {
+                  shouldTrigger = true;
+                } else if (trigger === "cash_only") {
+                  shouldTrigger = hasPhysicalCash;
+                }
+              }
+              if (shouldTrigger) {
+                triggerCashDrawerKick().catch(() => {});
+              }
+            } catch (error) {
+              console.error("Error al disparar apertura de cajon:", error);
+            }
             resetModalState();
             onClose();
           }
@@ -238,6 +297,7 @@ const PaymentModal = memo(
         paidAmount,
         dollarAmount,
         mixedPayments,
+        hasPhysicalCash,
         safeTotal,
         trackingCode,
         change,
@@ -249,6 +309,27 @@ const PaymentModal = memo(
         showAppDanger,
       ]
     );
+
+    // Segun la preferencia de impresion guardada en Configuracion, el cobro con
+    // impresion puede pedir una confirmacion previa antes de enviar el ticket.
+    // Se lee en el momento del cobro para reflejar cambios hechos en Settings.
+    const startPaymentWithPrint = useCallback(() => {
+      if (getPrintMode() !== PRINT_MODE_CONFIRM) {
+        processPayment(true);
+        return;
+      }
+
+      setAppModal({
+        isOpen: true,
+        type: "info",
+        title: "Confirmar impresión",
+        message: "¿Cobrar la venta e imprimir el ticket?",
+        confirmText: "Cobrar e imprimir",
+        cancelText: "Cancelar",
+        showCancel: true,
+        onConfirmAction: () => processPayment(true),
+      });
+    }, [processPayment]);
 
     useEffect(() => {
       if (!isOpen) return;
@@ -266,7 +347,7 @@ const PaymentModal = memo(
           setNotesModalOpen(true);
         } else if (e.key === "F1") {
           stop();
-          processPayment(true);
+          startPaymentWithPrint();
         } else if (e.key === "F2") {
           stop();
           processPayment(false);
@@ -281,11 +362,26 @@ const PaymentModal = memo(
       effectiveProcessing,
       closePaymentModal,
       processPayment,
+      startPaymentWithPrint,
     ]);
 
     useEffect(() => {
       if (!isOpen) resetModalState();
     }, [isOpen, resetModalState]);
+
+    // Refresca la configuracion de caja en cada apertura para reflejar de
+    // inmediato cualquier cambio hecho en SettingsCash.
+    useEffect(() => {
+      if (isOpen) {
+        const freshOps = getCashOperationSettings();
+        setCashOpSettings(freshOps);
+        setExchangeRate(
+          freshOps.defaultExchangeRate
+            ? String(freshOps.defaultExchangeRate)
+            : "18.50"
+        );
+      }
+    }, [isOpen]);
 
     // EFECTO DE AUTORELLENADO DE PAGO
     useEffect(() => {
@@ -312,23 +408,6 @@ const PaymentModal = memo(
       if (/^\d*\.?\d*$/.test(val) && val.split(".").length - 1 <= 1)
         setMixedPayments((p) => ({ ...p, [key]: val === "." ? "0." : val }));
     };
-
-    const ExchangeRateInput = () => (
-      <div className={styles.paymentRow}>
-        <span>Tipo de cambio:</span>
-        <div className={styles.inputWithSymbol}>
-          <span className={styles.currencySymbol}>$</span>
-          <input
-            type="text"
-            className={styles.paymentInput}
-            value={exchangeRate}
-            onChange={onDecimalInput(setExchangeRate)}
-            placeholder="0.00"
-            disabled={effectiveProcessing}
-          />
-        </div>
-      </div>
-    );
 
     if (!isOpen) return null;
 
@@ -360,7 +439,13 @@ const PaymentModal = memo(
 
           {!isZeroTotalSale && (
             <div className={styles.paymentMethods}>
-              {PAYMENT_METHODS.map((m) => (
+              {PAYMENT_METHODS.filter(
+                (m) =>
+                  !(
+                    m.id === "Dolares" &&
+                    cashOpSettings.acceptUsdPayments === false
+                  )
+              ).map((m) => (
                 <button
                   key={m.id}
                   type="button"
@@ -405,10 +490,11 @@ const PaymentModal = memo(
             ) : selectedPaymentMethod === "Efectivo" ? (
               <>
                 <div className={styles.paymentRow}>
-                  <span>Pagó Con:</span>
+                  <label htmlFor="payment-cash-amount">Pagó Con:</label>
                   <div className={styles.inputWithSymbol}>
                     <span className={styles.currencySymbol}>$</span>
                     <input
+                      id="payment-cash-amount"
                       type="text"
                       className={styles.paymentInput}
                       value={paidAmount}
@@ -426,12 +512,20 @@ const PaymentModal = memo(
               </>
             ) : selectedPaymentMethod === "Dolares" ? (
               <>
-                <ExchangeRateInput />
+                {cashOpSettings.acceptUsdPayments !== false ? (
+                  <div className={styles.paymentRow}>
+                    <span>Tipo de cambio:</span>
+                    <span className={styles.exchangeRateBadge}>
+                      ${numericExchangeRate.toFixed(2)} MXN
+                    </span>
+                  </div>
+                ) : null}
                 <div className={styles.paymentRow}>
-                  <span>Pagó Con (USD):</span>
+                  <label htmlFor="payment-usd-amount">Pagó Con (USD):</label>
                   <div className={styles.inputWithSymbol}>
                     <span className={styles.currencySymbol}>$</span>
                     <input
+                      id="payment-usd-amount"
                       type="text"
                       className={styles.paymentInput}
                       value={dollarAmount}
@@ -456,12 +550,12 @@ const PaymentModal = memo(
             ) : selectedPaymentMethod === "Mixto" ? (
               <div className={styles.mixedPaymentSection}>
                 <h3>Desglose de Pago</h3>
-                <ExchangeRateInput />
                 <div className={styles.paymentRow}>
-                  <span>Efectivo:</span>
+                  <label htmlFor="payment-mixed-cash">Efectivo:</label>
                   <div className={styles.inputWithSymbol}>
                     <span className={styles.currencySymbol}>$</span>
                     <input
+                      id="payment-mixed-cash"
                       type="text"
                       className={styles.paymentInput}
                       value={mixedPayments.efectivo}
@@ -473,10 +567,11 @@ const PaymentModal = memo(
                   </div>
                 </div>
                 <div className={styles.paymentRow}>
-                  <span>Tarjeta:</span>
+                  <label htmlFor="payment-mixed-card">Tarjeta:</label>
                   <div className={styles.inputWithSymbol}>
                     <span className={styles.currencySymbol}>$</span>
                     <input
+                      id="payment-mixed-card"
                       type="text"
                       className={styles.paymentInput}
                       value={mixedPayments.tarjeta}
@@ -486,20 +581,28 @@ const PaymentModal = memo(
                     />
                   </div>
                 </div>
-                <div className={styles.paymentRow}>
-                  <span>Dólares (USD):</span>
-                  <div className={styles.inputWithSymbol}>
-                    <span className={styles.currencySymbol}>$</span>
-                    <input
-                      type="text"
-                      className={styles.paymentInput}
-                      value={mixedPayments.dolares}
-                      onChange={onMixedInput("dolares")}
-                      placeholder="0.00"
-                      disabled={effectiveProcessing}
-                    />
-                  </div>
-                </div>
+                {cashOpSettings.acceptUsdPayments !== false ? (
+                  <>
+                    <div className={styles.paymentRow}>
+                      <label htmlFor="payment-mixed-usd">Dólares (USD):</label>
+                      <div className={styles.inputWithSymbol}>
+                        <span className={styles.currencySymbol}>$</span>
+                        <input
+                          id="payment-mixed-usd"
+                          type="text"
+                          className={styles.paymentInput}
+                          value={mixedPayments.dolares}
+                          onChange={onMixedInput("dolares")}
+                          placeholder="0.00"
+                          disabled={effectiveProcessing}
+                        />
+                      </div>
+                    </div>
+                    <p className={styles.exchangeRateHint}>
+                      (T.C. ${numericExchangeRate.toFixed(2)} MXN)
+                    </p>
+                  </>
+                ) : null}
                 <div className={styles.totalMixedRow}>
                   <span>Total Pagado:</span>
                   <span className={styles.totalMixedAmount}>
@@ -523,16 +626,23 @@ const PaymentModal = memo(
             ) : selectedPaymentMethod === "Transferencia" ? (
               <div className={styles.transferSection}>
                 <div className={styles.paymentRow}>
-                  <span>Información de Transferencia:</span>
+                  <label htmlFor="payment-tracking-code">
+                    Información de Transferencia:
+                  </label>
                   <input
+                    id="payment-tracking-code"
                     type="text"
                     className={styles.trackingInput}
                     value={trackingCode}
                     onChange={(e) => setTrackingCode(e.target.value)}
                     placeholder="Clave de rastreo, referencia, etc."
+                    aria-describedby="payment-tracking-hint"
                     disabled={effectiveProcessing}
                   />
                 </div>
+                <p id="payment-tracking-hint" className={styles.trackingHint}>
+                  Se guardará como referencia de la transferencia.
+                </p>
                 <div className={styles.paymentRow}>
                   <span>Total a Cobrar:</span>
                   <span className={styles.totalAmount}>
@@ -547,7 +657,7 @@ const PaymentModal = memo(
             <button
               type="button"
               className={styles.modalActionBtn}
-              onClick={() => processPayment(true)}
+              onClick={startPaymentWithPrint}
               disabled={effectiveProcessing}
             >
               {effectiveProcessing
@@ -599,8 +709,15 @@ const PaymentModal = memo(
           title={appModal.title}
           message={appModal.message}
           confirmText={appModal.confirmText}
+          cancelText={appModal.cancelText || "Cancelar"}
+          showCancel={Boolean(appModal.showCancel)}
           onClose={closeAppModal}
-          onConfirm={closeAppModal}
+          onConfirm={() => {
+            const action = appModal.onConfirmAction;
+            closeAppModal();
+            if (typeof action === "function") action();
+          }}
+          onCancel={closeAppModal}
         />
       </div>
     );

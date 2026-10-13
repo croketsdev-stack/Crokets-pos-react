@@ -39,6 +39,11 @@
   cursor: not-allowed;
 }
 
+.modalActionBtn:focus-visible {
+  outline: 3px solid #05313d;
+  outline-offset: 2px;
+}
+
 .modalActionBtn .actionKey {
   font-weight: bold;
   margin-bottom: 3px;
@@ -105,6 +110,11 @@
   cursor: not-allowed;
 }
 
+.closeButton:focus-visible {
+  outline: 3px solid #ffffff;
+  outline-offset: 2px;
+}
+
 .closeIcon {
   width: 24px;
   height: 24px;
@@ -161,6 +171,11 @@
 .paymentMethod:disabled {
   opacity: 0.65;
   cursor: not-allowed;
+}
+
+.paymentMethod:focus-visible {
+  outline: 3px solid #05313d;
+  outline-offset: 2px;
 }
 
 .paymentMethod.paymentMethodSelected {
@@ -275,6 +290,23 @@
   color: #0078d7;
 }
 
+.exchangeRateBadge {
+  display: inline-block;
+  padding: 6px 12px;
+  background-color: #f8f9fa;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #0078d7;
+}
+
+.exchangeRateHint {
+  margin: 0 0 10px;
+  font-size: 0.8rem;
+  color: #555555;
+  text-align: right;
+}
+
 .totalAmount {
   font-size: 1.2rem;
   font-weight: 900;
@@ -326,4 +358,10 @@
   outline: none;
   border-color: #fc8913;
   box-shadow: 0 0 0 2px rgba(252, 137, 19, 0.18);
+}
+
+.trackingHint {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: #555555;
 }

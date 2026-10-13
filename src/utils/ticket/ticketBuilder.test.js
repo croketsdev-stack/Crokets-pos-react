@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 
 import { buildTicketText } from "./ticketBuilder";
+import { TICKET_WIDTH, centerText, wrapText } from "./ticketLayoutFormatters";
 
 // Golden tests: congelan la salida byte-a-byte de buildTicketText.
 // Las fechas se fijan siempre en ISO para mantener determinismo; el TZ
@@ -1288,5 +1289,142 @@ describe("buildTicketText (golden)", () => {
         "================================",
       ].join("\n")
     );
+  });
+});
+
+const buildCustomizedHeaderLines = ({ slogan = "", fiscal = "" } = {}) => {
+  const lines = [];
+  [slogan, fiscal].forEach((text) => {
+    const trimmed = String(text).trim();
+    if (!trimmed) return;
+    wrapText(trimmed, TICKET_WIDTH).forEach((line) => {
+      const content = line.trim();
+      if (content) lines.push(centerText(content, TICKET_WIDTH));
+    });
+  });
+  return lines;
+};
+
+describe("buildTicketText (customization)", () => {
+  const baseInput = () => ({
+    branch: BASE_BRANCH,
+    sale: {
+      folio: "VENTA015",
+      created_at: "2026-09-16T18:00:00.000Z",
+      subtotal: 200,
+      tax: 32,
+      total: 232,
+      amount_received: 250,
+      change_amount: 18,
+      payment_method: "EFECTIVO",
+      payments: [{ payment_method_name: "Efectivo", amount: 250 }],
+      status: "completed",
+      customer_name: "María López",
+      customer_phone: "998 555 0101",
+      points_earned: 12,
+      customer_points_balance: 100,
+      notes: "Entregar en mostrador",
+    },
+    items: [
+      {
+        quantity: 1,
+        description: "Croquetas",
+        unit_price: 200,
+        original_unit_price: 200,
+        final_unit_price: 200,
+        line_total: 200,
+      },
+    ],
+    cashierName: "LAURA GARCIA",
+    footer: BASE_FOOTER,
+    customization: {
+      headerSlogan: "Todo para consentir a tu mascota",
+      fiscalInfo: "RFC: CRO123456",
+      footerLine1: "Gracias por su compra",
+      footerLine2: "",
+      footerPhone: "",
+      returnPolicy: "",
+      showCustomerPoints: true,
+      showCashierName: true,
+      showSaleNotes: true,
+      showBranchAddress: true,
+      showBranchPhone: true,
+    },
+  });
+
+  it("inserta slogan y rfc centrados despues de CROKETS y antes de la sucursal", () => {
+    const output = buildTicketText(baseInput());
+    const outputLines = output.split("\n");
+    const customLines = buildCustomizedHeaderLines({
+      slogan: "Todo para consentir a tu mascota",
+      fiscal: "RFC: CRO123456",
+    });
+
+    expect(outputLines[1]).toBe("            CROKETS             ");
+    expect(outputLines.slice(2, 2 + customLines.length)).toEqual(customLines);
+    expect(outputLines[2 + customLines.length]).toBe(
+      "        SUCURSAL CENTRO         "
+    );
+  });
+
+  it("no inserta cabeceras adicionales cuando slogan o rfc estan vacios", () => {
+    const input = baseInput();
+    input.customization.headerSlogan = "";
+    input.customization.fiscalInfo = "";
+
+    const outputLines = buildTicketText(input).split("\n");
+
+    expect(outputLines[1]).toBe("            CROKETS             ");
+    expect(outputLines[2]).toBe("        SUCURSAL CENTRO         ");
+  });
+
+  it("omite direccion, telefono, cajero, puntos y notas cuando los toggles estan apagados", () => {
+    const input = baseInput();
+    input.customization.showBranchAddress = false;
+    input.customization.showBranchPhone = false;
+    input.customization.showCashierName = false;
+    input.customization.showCustomerPoints = false;
+    input.customization.showSaleNotes = false;
+
+    const output = buildTicketText(input);
+
+    expect(output).not.toContain("AV. XUCHIL 5 SM 34");
+    expect(output).not.toContain("Tel. 998 111 2233");
+    expect(output).not.toContain("Cajero:");
+    expect(output).not.toContain("PUNTOS DEL CLIENTE");
+    expect(output).not.toContain("Notas:");
+    expect(output).not.toContain("Entregar en mostrador");
+    expect(output).toContain("Folio : VENTA015");
+  });
+
+  it("mantiene la salida byte a byte cuando customization es null, vacio o ausente", () => {
+    const base = baseInput();
+    delete base.customization;
+    const withoutCustomization = buildTicketText(base);
+
+    const emptyCustom = baseInput();
+    emptyCustom.customization = {};
+    expect(buildTicketText(emptyCustom)).toBe(withoutCustomization);
+
+    const nullCustom = baseInput();
+    nullCustom.customization = null;
+    expect(buildTicketText(nullCustom)).toBe(withoutCustomization);
+  });
+
+  it("envuelve un slogan largo sin truncar su ancho util de 32 columnas", () => {
+    const input = baseInput();
+    input.customization.headerSlogan =
+      "El mejor lugar para consentir y cuidar a tu mascota todos los dias";
+
+    const output = buildTicketText(input);
+    const outputLines = output.split("\n");
+    const customLines = buildCustomizedHeaderLines({
+      slogan: input.customization.headerSlogan,
+    });
+
+    expect(outputLines.slice(2, 2 + customLines.length)).toEqual(customLines);
+    customLines.forEach((line) => {
+      expect(line.length).toBe(TICKET_WIDTH);
+    });
   });
 });

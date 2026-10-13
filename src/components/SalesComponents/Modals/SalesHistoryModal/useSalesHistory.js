@@ -23,6 +23,13 @@ import {
 import { useDidChange } from "../../../../hooks/useDidChange";
 import { useRequestStatus } from "../../../../hooks/useRequestStatus";
 import { printTicket } from "../../../../utils/ticketPrinter";
+import {
+  getTicketPrintProfile,
+  getSelectedPrinter,
+  getTicketCopies,
+  getTicketFeedLines,
+} from "../../../../services/printSettingsService";
+import { getTicketCustomization } from "../../../../services/ticketCustomizationService";
 import { buildTicketText } from "../../../../utils/ticket/ticketBuilder";
 
 export const useSalesHistory = ({
@@ -577,6 +584,13 @@ export const useSalesHistory = ({
         reference: p.reference || "",
       }));
 
+      let customization = null;
+      try {
+        customization = await getTicketCustomization({ branchId: branch?.id });
+      } catch (err) {
+        console.error("Error al obtener personalización del ticket:", err);
+      }
+
       const ticketText = buildTicketText({
         branch: {
           name: branch?.name || "SUCURSAL",
@@ -643,17 +657,24 @@ export const useSalesHistory = ({
         items: itemsForPrint,
         cashierName: ticketForPrint.cashier,
         footer: {
-          line1: "Gracias por su compra",
-          line2: "Agenda tu cita de baño",
-          phone: "998 117 5387",
+          line1: customization?.footerLine1 || "Gracias por su compra",
+          line2: customization?.footerLine2 || "Agenda tu cita de baño",
+          phone: customization?.footerPhone || "998 117 5387",
           returnPolicy:
+            customization?.returnPolicy ||
             "Para cambios o devoluciones presentar ticket de compra",
         },
         isReprint: true,
         reprintedAt: new Date(),
+        customization,
       });
 
-      const result = await printTicket(ticketText);
+      const result = await printTicket(ticketText, {
+        profile: getTicketPrintProfile(),
+        deviceName: getSelectedPrinter && getSelectedPrinter(),
+        copies: getTicketCopies && getTicketCopies(),
+        feedLines: getTicketFeedLines && getTicketFeedLines(),
+      });
       if (!result?.success)
         throw new Error(result?.message || "No se pudo imprimir la copia.", {
           cause: result?.error,

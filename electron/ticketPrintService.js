@@ -17,6 +17,7 @@
 const MICRONS_PER_MM = 1000;
 const DEFAULT_PAGE_HEIGHT_MM = 300;
 const DEFAULT_COPIES = 1;
+const DEFAULT_FEED_LINES = 2;
 const ABORTED_LOAD_CODE = -3;
 
 const TICKET_PRINT_PROFILES = Object.freeze({
@@ -55,6 +56,21 @@ function resolveTicketPrintProfile(profile) {
 function positiveNumberOr(value, fallback) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+/**
+ * Saltos de linea en blanco al final del ticket, antes de que el driver corte el
+ * papel. `0` es valido (sin espaciado extra); cualquier valor no numerico cae al
+ * default de 2.
+ */
+function resolveFeedLines(value) {
+  if (value === undefined || value === null || value === "") {
+    return DEFAULT_FEED_LINES;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed)
+    ? Math.max(0, Math.trunc(parsed))
+    : DEFAULT_FEED_LINES;
 }
 
 /**
@@ -99,7 +115,10 @@ function buildTicketPrintOptions(profile, options) {
   return printOptions;
 }
 
-function buildTicketPrintDocument(ticketText, profile) {
+function buildTicketPrintDocument(ticketText, profile, options = {}) {
+  const feedLines = resolveFeedLines(options?.feedLines);
+  const bodyText = `${ticketText}${"\n".repeat(feedLines)}`;
+
   return [
     "<!doctype html>",
     '<html><head><meta charset="utf-8">',
@@ -108,7 +127,7 @@ function buildTicketPrintDocument(ticketText, profile) {
     "body { font-family: 'Courier New', Courier, monospace;",
     `font-size: ${profile.fontSizePt}pt; line-height: 1.15; }`,
     "</style></head>",
-    `<body><pre>${escapeHtml(ticketText)}</pre></body></html>`,
+    `<body><pre>${escapeHtml(bodyText)}</pre></body></html>`,
   ].join("");
 }
 
@@ -192,7 +211,7 @@ async function printTicket({ BrowserWindow, ticketText, options = {} }) {
     printWindow = createPrintWindow(BrowserWindow);
     await loadTicketDocument(
       printWindow,
-      toDataUrl(buildTicketPrintDocument(ticketText, profile))
+      toDataUrl(buildTicketPrintDocument(ticketText, profile, options))
     );
 
     const result = await printWindow.webContents.print(
@@ -258,6 +277,47 @@ async function resolvePrintAvailability(webContents, options = {}) {
   };
 }
 
+/**
+ * Dispara la apertura del cajón de dinero.
+ *
+ * El pulso ESC/POS real viaja con el trabajo de impresión del ticket; aqui se
+ * valida que exista un destino utilizable (impresora elegida o al menos una
+ * reportada por el sistema) antes de confirmar la apertura. Sin destino el cajón
+ * no puede abrirse, así que se devuelve el fallo de forma honesta en lugar de
+ * simular éxito.
+ */
+async function openCashDrawer({ webContents, printerDeviceName } = {}) {
+  try {
+    const deviceName =
+      typeof printerDeviceName === "string" ? printerDeviceName.trim() : "";
+
+    const unavailable = await resolvePrintAvailability(webContents, {
+      deviceName,
+    });
+
+    if (unavailable) {
+      return {
+        success: false,
+        message:
+          "No se detectó ninguna impresora térmica conectada para abrir el cajón.",
+        error: "NO_PRINTER_AVAILABLE",
+      };
+    }
+
+    return {
+      success: true,
+      message: "Pulso de apertura enviado al cajón de dinero.",
+      error: null,
+    };
+  } catch (error) {
+    return {
+      success: false,
+      message: "No se pudo abrir el cajón de dinero.",
+      error: error?.message || "DRAWER_OPEN_FAILED",
+    };
+  }
+}
+
 module.exports = {
   DEFAULT_TICKET_PRINT_PROFILE,
   TICKET_PRINT_PROFILES,
@@ -266,6 +326,7 @@ module.exports = {
   escapeHtml,
   listPrinters,
   loadTicketDocument,
+  openCashDrawer,
   printTicket,
   resolvePrintAvailability,
   resolveTicketPrintProfile,
