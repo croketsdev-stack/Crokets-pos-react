@@ -9,15 +9,12 @@ import { fetchActiveCashSession } from "../../../../../services/cashRegisterServ
 import {
   runDiagnostics,
   checkOnlineStatus,
+  checkElectronBridge,
 } from "../services/terminalDiagnosticsService";
 import { fetchBranchProfile } from "../services/branchProfileService";
 import { ZOOM_STEPS, findNextZoomStep } from "../utils/terminalHelpers";
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { checkUserIsAdmin } from "../../../../../lib/permissionsService";
-
-const hasElectronBridge = () =>
-  typeof window !== "undefined" &&
-  typeof window.electronAPI?.invoke === "function";
 
 export const useSettingsTerminal = (branch) => {
   const { user } = useAuth();
@@ -247,7 +244,7 @@ export const useSettingsTerminal = (branch) => {
   const handleToggleFullscreen = useCallback(async () => {
     setFullscreenFeedback(null);
     try {
-      if (hasElectronBridge()) {
+      if (checkElectronBridge()) {
         const result = await window.electronAPI.invoke("toggle-fullscreen");
         if (mountedRef.current && result) {
           setFullscreen(!!result.fullscreen);
@@ -290,7 +287,7 @@ export const useSettingsTerminal = (branch) => {
     fullscreenFeedback,
     screenInfo,
     zoomChips: ZOOM_STEPS,
-    hasElectronBridge: hasElectronBridge(),
+    hasElectronBridge: checkElectronBridge(),
     handleZoomChange,
     handleZoomSet,
     handleZoomReset,

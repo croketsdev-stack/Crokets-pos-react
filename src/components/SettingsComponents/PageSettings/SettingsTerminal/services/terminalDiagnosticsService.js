@@ -7,6 +7,7 @@ const hasElectronBridge = () =>
 export const measureLatencyToSupabase = async (timeoutMs = 5000) => {
   const start =
     typeof performance !== "undefined" ? performance.now() : Date.now();
+  let timeoutId = null;
 
   try {
     const ControllerClass =
@@ -16,7 +17,7 @@ export const measureLatencyToSupabase = async (timeoutMs = 5000) => {
           ? global.AbortController
           : null;
     const controller = ControllerClass ? new ControllerClass() : null;
-    const timeoutId = controller
+    timeoutId = controller
       ? setTimeout(() => controller.abort(), timeoutMs)
       : null;
 
@@ -29,9 +30,7 @@ export const measureLatencyToSupabase = async (timeoutMs = 5000) => {
     const response = await query;
     const error = response?.error;
 
-    if (timeoutId) clearTimeout(timeoutId);
-
-    if (error && error.name !== "AbortError") throw error;
+    if (error) throw error;
 
     const end =
       typeof performance !== "undefined" ? performance.now() : Date.now();
@@ -44,7 +43,7 @@ export const measureLatencyToSupabase = async (timeoutMs = 5000) => {
       error: null,
     };
   } catch (error) {
-    if (error.name === "AbortError") {
+    if (error?.name === "AbortError") {
       return {
         success: false,
         connected: false,
@@ -59,8 +58,10 @@ export const measureLatencyToSupabase = async (timeoutMs = 5000) => {
       success: false,
       connected: false,
       latencyMs: null,
-      error: error.message || "Sin conexión con Supabase",
+      error: error?.message || "Sin conexión con Supabase",
     };
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
 };
 
@@ -75,11 +76,34 @@ export const checkElectronBridge = () => {
   return hasElectronBridge();
 };
 
+export const checkAuthSession = async () => {
+  try {
+    const { data, error } = await supabase.auth.getSession();
+    if (error || !data?.session?.user) {
+      return {
+        status: "error",
+        message: "Sin sesión activa o sesión expirada",
+      };
+    }
+    return {
+      status: "ok",
+      message: "Sesión verificada",
+    };
+  } catch (error) {
+    console.error("Error verificando sesión en diagnóstico:", error);
+    return {
+      status: "error",
+      message: "Error al verificar sesión",
+    };
+  }
+};
+
 export const runDiagnostics = async () => {
   const online = checkOnlineStatus();
   const electronBridge = checkElectronBridge();
 
   const latencyResult = await measureLatencyToSupabase();
+  const authResult = await checkAuthSession();
 
   const services = [
     {
@@ -95,15 +119,15 @@ export const runDiagnostics = async () => {
       label: "Supabase Database",
       status: latencyResult.connected ? "ok" : "error",
       message: latencyResult.connected
-        ? `Respuesta: ${Math.round(latencyResult.latencyMs)} ms`
+        ? `Respuesta: ${Math.round(latencyResult.latencyMs ?? 0)} ms`
         : latencyResult.error || "Sin conexión con Supabase",
       latencyMs: latencyResult.latencyMs,
     },
     {
       id: "auth",
       label: "Autenticación",
-      status: "ok",
-      message: "Sesión verificada",
+      status: authResult.status,
+      message: authResult.message,
     },
     {
       id: "electron",
