@@ -441,7 +441,7 @@ describe("electron mainProcess", () => {
         );
         expect(
           decodeURIComponent(printWindow.loadURL.mock.calls[0][0])
-        ).toContain("<pre>TICKET DE PRUEBA</pre>");
+        ).toContain("<pre>TICKET DE PRUEBA\n\n</pre>");
         expect(printWindow.webContents.print).toHaveBeenCalledWith(
           expect.objectContaining({
             silent: true,

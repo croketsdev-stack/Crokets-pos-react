@@ -355,6 +355,7 @@ export const printSaleTicket = async ({
           "Para cambios o devoluciones presentar ticket de compra",
       },
       isReprint: false,
+      customization,
     });
 
     const printResult = await printTicket(ticketText, {

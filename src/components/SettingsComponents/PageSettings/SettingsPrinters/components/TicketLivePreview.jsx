@@ -1,10 +1,6 @@
 import { useMemo, useState } from "react";
 import { buildTicketText } from "../../../../../utils/ticket/ticketBuilder";
 import { buildCashCutText } from "../../../../../utils/cashCutBuilder";
-import {
-  wrapText,
-  centerText,
-} from "../../../../../utils/ticket/ticketLayoutFormatters";
 import styles from "../SettingsPrinters.module.css";
 import receiptIcon from "../../../../../assets/icons/receipt-solid-full.svg";
 
@@ -119,40 +115,10 @@ const TicketLivePreview = ({
           : "",
       footer,
       isReprint: false,
+      customization: template,
     });
-
-    const headerLines = [];
-    if (template.headerSlogan) {
-      const slogan = String(template.headerSlogan).trim();
-      if (slogan) {
-        const wrappedSlogan = wrapText(slogan, columns);
-        wrappedSlogan.forEach((line) => {
-          const trimmed = line.trim();
-          if (trimmed) headerLines.push(centerText(trimmed, columns));
-        });
-      }
-    }
-    if (template.fiscalInfo) {
-      const fiscal = String(template.fiscalInfo).trim();
-      if (fiscal) {
-        const wrappedFiscal = wrapText(fiscal, columns);
-        wrappedFiscal.forEach((line) => {
-          const trimmed = line.trim();
-          if (trimmed) headerLines.push(centerText(trimmed, columns));
-        });
-      }
-    }
-    if (headerLines.length > 0) {
-      const lines = text.split("\n");
-      if (lines.length >= 2) {
-        lines.splice(2, 0, ...headerLines);
-        text = lines.join("\n");
-      } else {
-        text = headerLines.join("\n") + "\n" + text;
-      }
-    }
     return text;
-  }, [branch, columns, template, user, viewMode]);
+  }, [branch, template, user, viewMode]);
 
   const handleViewVenta = () => {
     if (setViewMode) setViewMode("venta");

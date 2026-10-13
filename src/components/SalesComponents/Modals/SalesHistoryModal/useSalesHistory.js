@@ -666,6 +666,7 @@ export const useSalesHistory = ({
         },
         isReprint: true,
         reprintedAt: new Date(),
+        customization,
       });
 
       const result = await printTicket(ticketText, {
