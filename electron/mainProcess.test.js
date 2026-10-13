@@ -18,6 +18,7 @@ const IPC_CHANNELS = [
   "get-zoom-debug",
   "print-ticket",
   "open-cash-drawer",
+    "get-printers",
 ];
 
 const originalPlatform = process.platform;
@@ -531,7 +532,8 @@ describe("electron mainProcess", () => {
       });
     });
 
-    describe("open-cash-drawer", () => {
+    describe("open-cash-drawer",
+    "get-printers", () => {
       it("confirma la apertura cuando hay impresora conectada", async () => {
         const { handlers } = buildIpcHarness();
         const sender = createWebContents({

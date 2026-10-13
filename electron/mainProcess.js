@@ -226,6 +226,11 @@ function registerIpcHandlers({
     });
   });
 
+  ipcMain.handle("get-printers", async (event) => {
+    const { listPrinters } = require("./ticketPrintService");
+    return listPrinters(event.sender);
+  });
+
   ipcMain.handle("open-cash-drawer", async (event, payload = {}) => {
     try {
       return await openCashDrawer({

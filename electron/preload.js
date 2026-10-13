@@ -9,6 +9,7 @@ const allowedInvokeChannels = [
   "configure-zoom",
   "reset-zoom",
   "get-zoom-debug",
+  "get-printers",
   "print-ticket",
   "open-cash-drawer",
 ];
