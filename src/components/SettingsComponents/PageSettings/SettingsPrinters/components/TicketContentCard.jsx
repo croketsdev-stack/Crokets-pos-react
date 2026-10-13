@@ -1,4 +1,6 @@
 import styles from "../SettingsPrinters.module.css";
+import checkIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
+import warningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
 
 const TicketContentCard = ({
   template = {},
@@ -176,14 +178,32 @@ const TicketContentCard = ({
     </div>
 
     {templateFeedback?.type === "error" ? (
-      <p role="alert" className={styles.errorMessage}>
-        {templateFeedback.message}
-      </p>
+      <div
+        role="alert"
+        className={`${styles.feedbackBanner} ${styles.feedbackError}`}
+      >
+        <img
+          src={warningIcon}
+          alt=""
+          className={styles.feedbackIcon}
+          aria-hidden="true"
+        />
+        <span>{templateFeedback.message}</span>
+      </div>
     ) : null}
     {templateFeedback?.type === "success" ? (
-      <p role="status" className={styles.statusMessage}>
-        {templateFeedback.message}
-      </p>
+      <div
+        role="status"
+        className={`${styles.feedbackBanner} ${styles.feedbackSuccess}`}
+      >
+        <img
+          src={checkIcon}
+          alt=""
+          className={styles.feedbackIcon}
+          aria-hidden="true"
+        />
+        <span>{templateFeedback.message}</span>
+      </div>
     ) : null}
   </article>
 );

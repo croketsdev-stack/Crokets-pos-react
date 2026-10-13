@@ -1,6 +1,8 @@
 import styles from "../SettingsPrinters.module.css";
 import printIcon from "../../../../../assets/icons/print-solid-full.svg";
 import moneyIcon from "../../../../../assets/icons/money-bill-wave-solid-full.svg";
+import checkIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
+import warningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
 
 const TicketDiagnosticCard = ({
   widthMm = 58,
@@ -42,14 +44,32 @@ const TicketDiagnosticCard = ({
         {printing ? "Imprimiendo..." : "Imprimir ticket de prueba"}
       </button>
       {printFeedback?.type === "error" ? (
-        <p role="alert" className={styles.errorMessage}>
-          {printFeedback.message}
-        </p>
+        <div
+          role="alert"
+          className={`${styles.feedbackBanner} ${styles.feedbackError}`}
+        >
+          <img
+            src={warningIcon}
+            alt=""
+            className={styles.feedbackIcon}
+            aria-hidden="true"
+          />
+          <span>{printFeedback.message}</span>
+        </div>
       ) : null}
       {printFeedback?.type === "success" ? (
-        <p role="status" className={styles.statusMessage}>
-          {printFeedback.message}
-        </p>
+        <div
+          role="status"
+          className={`${styles.feedbackBanner} ${styles.feedbackSuccess}`}
+        >
+          <img
+            src={checkIcon}
+            alt=""
+            className={styles.feedbackIcon}
+            aria-hidden="true"
+          />
+          <span>{printFeedback.message}</span>
+        </div>
       ) : null}
     </div>
 
@@ -83,14 +103,32 @@ const TicketDiagnosticCard = ({
         Probar apertura del cajón
       </button>
       {drawerFeedback?.type === "error" ? (
-        <p role="alert" className={styles.errorMessage}>
-          {drawerFeedback.message}
-        </p>
+        <div
+          role="alert"
+          className={`${styles.feedbackBanner} ${styles.feedbackError}`}
+        >
+          <img
+            src={warningIcon}
+            alt=""
+            className={styles.feedbackIcon}
+            aria-hidden="true"
+          />
+          <span>{drawerFeedback.message}</span>
+        </div>
       ) : null}
       {drawerFeedback?.type === "success" ? (
-        <p role="status" className={styles.statusMessage}>
-          {drawerFeedback.message}
-        </p>
+        <div
+          role="status"
+          className={`${styles.feedbackBanner} ${styles.feedbackSuccess}`}
+        >
+          <img
+            src={checkIcon}
+            alt=""
+            className={styles.feedbackIcon}
+            aria-hidden="true"
+          />
+          <span>{drawerFeedback.message}</span>
+        </div>
       ) : null}
     </div>
   </article>

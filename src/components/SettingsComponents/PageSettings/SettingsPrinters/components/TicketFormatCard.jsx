@@ -1,5 +1,7 @@
 import styles from "../SettingsPrinters.module.css";
 import { TICKET_WIDTH_OPTIONS } from "../../../../../services/printSettingsService";
+import checkIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
+import warningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
 
 const TicketFormatCard = ({
   widthMm,
@@ -119,15 +121,33 @@ const TicketFormatCard = ({
     </div>
 
     {preferencesFeedback?.type === "error" ? (
-      <p role="alert" className={styles.errorMessage}>
-        {preferencesFeedback.message}
-      </p>
+      <div
+        role="alert"
+        className={`${styles.feedbackBanner} ${styles.feedbackError}`}
+      >
+        <img
+          src={warningIcon}
+          alt=""
+          className={styles.feedbackIcon}
+          aria-hidden="true"
+        />
+        <span>{preferencesFeedback.message}</span>
+      </div>
     ) : null}
 
     {preferencesFeedback?.type === "success" ? (
-      <p role="status" className={styles.statusMessage}>
-        {preferencesFeedback.message}
-      </p>
+      <div
+        role="status"
+        className={`${styles.feedbackBanner} ${styles.feedbackSuccess}`}
+      >
+        <img
+          src={checkIcon}
+          alt=""
+          className={styles.feedbackIcon}
+          aria-hidden="true"
+        />
+        <span>{preferencesFeedback.message}</span>
+      </div>
     ) : null}
   </article>
 );

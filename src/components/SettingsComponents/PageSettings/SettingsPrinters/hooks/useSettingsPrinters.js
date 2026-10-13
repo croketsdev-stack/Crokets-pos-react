@@ -296,6 +296,24 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
     }
   }, [templateFeedback]);
 
+  useEffect(() => {
+    if (printFeedback?.type === "success") {
+      const timer = setTimeout(() => {
+        setPrintFeedback(DEFAULT_FEEDBACK);
+      }, 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [printFeedback]);
+
+  useEffect(() => {
+    if (drawerFeedback?.type === "success") {
+      const timer = setTimeout(() => {
+        setDrawerFeedback(DEFAULT_FEEDBACK);
+      }, 3500);
+      return () => clearTimeout(timer);
+    }
+  }, [drawerFeedback]);
+
   const previewData = useMemo(
     () => ({
       headerSlogan: template.headerSlogan,
