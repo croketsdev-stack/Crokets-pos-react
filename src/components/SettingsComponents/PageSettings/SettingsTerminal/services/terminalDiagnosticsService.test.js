@@ -19,19 +19,25 @@ describe("terminalDiagnosticsService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     const nav = { onLine: true };
-    if (typeof global.navigator === 'undefined') {
+    if (typeof global.navigator === "undefined") {
       global.navigator = nav;
     } else {
-      Object.defineProperty(navigator, 'onLine', { writable: true, configurable: true, value: true });
+      Object.defineProperty(navigator, "onLine", {
+        writable: true,
+        configurable: true,
+        value: true,
+      });
     }
-    if (typeof global.window === 'undefined') {
+    if (typeof global.window === "undefined") {
       global.window = {};
     }
     global.window.electronAPI = { invoke: vi.fn() };
-    if (typeof global.performance === 'undefined') {
-      global.performance = { now: vi.fn().mockReturnValueOnce(0).mockReturnValueOnce(100) };
+    if (typeof global.performance === "undefined") {
+      global.performance = {
+        now: vi.fn().mockReturnValueOnce(0).mockReturnValueOnce(100),
+      };
     } else {
-      Object.defineProperty(global, 'performance', {
+      Object.defineProperty(global, "performance", {
         writable: true,
         configurable: true,
         value: { now: vi.fn().mockReturnValueOnce(0).mockReturnValueOnce(100) },
@@ -55,7 +61,6 @@ describe("terminalDiagnosticsService", () => {
     });
 
     it("handles timeout", async () => {
-      const controller = new AbortController();
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         limit: vi.fn().mockReturnThis(),
@@ -81,7 +86,9 @@ describe("terminalDiagnosticsService", () => {
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         limit: vi.fn().mockReturnThis(),
-        abortSignal: vi.fn().mockResolvedValue({ data: null, error: { message: "fail" } }),
+        abortSignal: vi
+          .fn()
+          .mockResolvedValue({ data: null, error: { message: "fail" } }),
       };
       supabase.from.mockReturnValue(mockQuery);
 
@@ -94,9 +101,17 @@ describe("terminalDiagnosticsService", () => {
 
   describe("checkOnlineStatus", () => {
     it("returns navigator.onLine", () => {
-      Object.defineProperty(navigator, 'onLine', { writable: true, configurable: true, value: false });
+      Object.defineProperty(navigator, "onLine", {
+        writable: true,
+        configurable: true,
+        value: false,
+      });
       expect(checkOnlineStatus()).toBe(false);
-      Object.defineProperty(navigator, 'onLine', { writable: true, configurable: true, value: true });
+      Object.defineProperty(navigator, "onLine", {
+        writable: true,
+        configurable: true,
+        value: true,
+      });
       expect(checkOnlineStatus()).toBe(true);
     });
 
@@ -117,7 +132,9 @@ describe("terminalDiagnosticsService", () => {
 
   describe("runDiagnostics", () => {
     it("runs full diagnostics", async () => {
-      global.performance = { now: vi.fn().mockReturnValueOnce(0).mockReturnValueOnce(50) };
+      global.performance = {
+        now: vi.fn().mockReturnValueOnce(0).mockReturnValueOnce(50),
+      };
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         limit: vi.fn().mockReturnThis(),

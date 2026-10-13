@@ -33,7 +33,12 @@ export const formatBytes = (bytes) => {
 };
 
 export const formatResolution = (width, height) => {
-  if (!width || !height || !Number.isFinite(width) || !Number.isFinite(height)) {
+  if (
+    !width ||
+    !height ||
+    !Number.isFinite(width) ||
+    !Number.isFinite(height)
+  ) {
     return "N/A";
   }
 
@@ -49,7 +54,11 @@ export const formatDpr = (dpr) => {
 };
 
 export const getLatencyLevel = (latencyMs) => {
-  if (latencyMs === null || latencyMs === undefined || !Number.isFinite(latencyMs)) {
+  if (
+    latencyMs === null ||
+    latencyMs === undefined ||
+    !Number.isFinite(latencyMs)
+  ) {
     return "disconnected";
   }
 

@@ -5,23 +5,36 @@ const hasElectronBridge = () =>
   typeof window.electronAPI?.invoke === "function";
 
 export const measureLatencyToSupabase = async (timeoutMs = 5000) => {
-  const start = typeof performance !== "undefined" ? performance.now() : Date.now();
+  const start =
+    typeof performance !== "undefined" ? performance.now() : Date.now();
 
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    const ControllerClass =
+      typeof window !== "undefined" && window.AbortController
+        ? window.AbortController
+        : typeof global !== "undefined" && global.AbortController
+          ? global.AbortController
+          : null;
+    const controller = ControllerClass ? new ControllerClass() : null;
+    const timeoutId = controller
+      ? setTimeout(() => controller.abort(), timeoutMs)
+      : null;
 
-    const { error } = await supabase
-      .from("users")
-      .select("id")
-      .limit(1)
-      .abortSignal?.(controller.signal);
+    const baseQuery = supabase.from("users").select("id").limit(1);
+    const query =
+      controller?.signal && typeof baseQuery.abortSignal === "function"
+        ? baseQuery.abortSignal(controller.signal)
+        : baseQuery;
 
-    clearTimeout(timeoutId);
+    const response = await query;
+    const error = response?.error;
+
+    if (timeoutId) clearTimeout(timeoutId);
 
     if (error && error.name !== "AbortError") throw error;
 
-    const end = typeof performance !== "undefined" ? performance.now() : Date.now();
+    const end =
+      typeof performance !== "undefined" ? performance.now() : Date.now();
     const latencyMs = end - start;
 
     return {
@@ -73,7 +86,9 @@ export const runDiagnostics = async () => {
       id: "network",
       label: "Internet / Red",
       status: online ? "ok" : "error",
-      message: online ? "Conexión de red disponible" : "Sin conexión a internet",
+      message: online
+        ? "Conexión de red disponible"
+        : "Sin conexión a internet",
     },
     {
       id: "supabase",

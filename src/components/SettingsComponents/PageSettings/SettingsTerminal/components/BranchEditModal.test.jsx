@@ -218,11 +218,15 @@ describe("formatters and sanitizers", () => {
   it("toTitleCase transforma correctamente", () => {
     expect(toTitleCase("sUcuRsal tOrRes")).toBe("Sucursal Torres");
     expect(toTitleCase("SUCURSAL CENTRO")).toBe("Sucursal Centro");
-    expect(toTitleCase("  plaza   las   americas  ")).toBe("Plaza Las Americas");
+    expect(toTitleCase("  plaza   las   americas  ")).toBe(
+      "Plaza Las Americas"
+    );
   });
 
   it("normalizeAddress normaliza la direccion correctamente", () => {
-    expect(normalizeAddress("  av. nichupte   sm 51  ")).toBe("Av. nichupte sm 51");
+    expect(normalizeAddress("  av. nichupte   sm 51  ")).toBe(
+      "Av. nichupte sm 51"
+    );
   });
 
   it("sanitizeBranchForm sanea el objeto completo", () => {
