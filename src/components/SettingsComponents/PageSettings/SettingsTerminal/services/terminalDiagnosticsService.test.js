@@ -3,12 +3,17 @@ import {
   measureLatencyToSupabase,
   checkOnlineStatus,
   checkElectronBridge,
+  checkAuthSession,
   runDiagnostics,
 } from "./terminalDiagnosticsService";
 
-const { supabase } = vi.hoisted(() => {
+const { supabase, mockGetSession } = vi.hoisted(() => {
   const mockFrom = vi.fn();
-  return { supabase: { from: mockFrom } };
+  const getSession = vi.fn();
+  return {
+    supabase: { from: mockFrom, auth: { getSession } },
+    mockGetSession: getSession,
+  };
 });
 
 vi.mock("../../../../../lib/supabaseClient", () => ({
@@ -18,6 +23,10 @@ vi.mock("../../../../../lib/supabaseClient", () => ({
 describe("terminalDiagnosticsService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetSession.mockResolvedValue({
+      data: { session: { user: { id: "u1", email: "u@test.com" } } },
+      error: null,
+    });
     const nav = { onLine: true };
     if (typeof global.navigator === "undefined") {
       global.navigator = nav;
@@ -130,6 +139,53 @@ describe("terminalDiagnosticsService", () => {
     });
   });
 
+  describe("checkAuthSession", () => {
+    it("retorna ok cuando hay usuario en la sesion", async () => {
+      mockGetSession.mockResolvedValue({
+        data: { session: { user: { id: "u1" } } },
+        error: null,
+      });
+
+      await expect(checkAuthSession()).resolves.toEqual({
+        status: "ok",
+        message: "Sesión verificada",
+      });
+    });
+
+    it("retorna error cuando no hay usuario en la sesion", async () => {
+      mockGetSession.mockResolvedValue({
+        data: { session: null },
+        error: null,
+      });
+
+      await expect(checkAuthSession()).resolves.toEqual({
+        status: "error",
+        message: "Sin sesión activa o sesión expirada",
+      });
+    });
+
+    it("retorna error cuando getSession devuelve un error", async () => {
+      mockGetSession.mockResolvedValue({
+        data: { session: null },
+        error: { message: "boom" },
+      });
+
+      await expect(checkAuthSession()).resolves.toEqual({
+        status: "error",
+        message: "Sin sesión activa o sesión expirada",
+      });
+    });
+
+    it("retorna error cuando getSession lanza una excepcion", async () => {
+      mockGetSession.mockRejectedValue(new Error("network down"));
+
+      await expect(checkAuthSession()).resolves.toEqual({
+        status: "error",
+        message: "Error al verificar sesión",
+      });
+    });
+  });
+
   describe("runDiagnostics", () => {
     it("runs full diagnostics", async () => {
       global.performance = {
@@ -146,6 +202,33 @@ describe("terminalDiagnosticsService", () => {
       expect(result.success).toBe(true);
       expect(result.overallOk).toBe(true);
       expect(result.services.length).toBe(4);
+
+      const authService = result.services.find((s) => s.id === "auth");
+      expect(authService.status).toBe("ok");
+      expect(authService.message).toBe("Sesión verificada");
+    });
+
+    it("marca overallOk false y auth en error cuando no hay sesion", async () => {
+      global.performance = {
+        now: vi.fn().mockReturnValueOnce(0).mockReturnValueOnce(50),
+      };
+      const mockQuery = {
+        select: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        abortSignal: vi.fn().mockResolvedValue({ data: [], error: null }),
+      };
+      supabase.from.mockReturnValue(mockQuery);
+      mockGetSession.mockResolvedValue({
+        data: { session: null },
+        error: null,
+      });
+
+      const result = await runDiagnostics();
+      expect(result.overallOk).toBe(false);
+
+      const authService = result.services.find((s) => s.id === "auth");
+      expect(authService.status).toBe("error");
+      expect(authService.message).toBe("Sin sesión activa o sesión expirada");
     });
   });
 });

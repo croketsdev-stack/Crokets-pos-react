@@ -102,6 +102,38 @@ describe("BranchEditModal", () => {
     expect(select.value).toBe("America/Cancun");
   });
 
+  it("rehidrata el formulario cuando el perfil carga con el modal abierto", () => {
+    const { rerender } = renderModal({
+      branchProfile: null,
+      branch: { id: "b1", code: "TOR", name: "Torres" },
+    });
+
+    expect(screen.getByLabelText(/Ciudad/).value).toBe("");
+    expect(screen.getByLabelText(/Correo de contacto/).value).toBe("");
+
+    rerender(
+      <BranchEditModal
+        isOpen
+        branchProfile={fullBranchProfile}
+        branch={{ id: "b1", code: "TOR", name: "Torres" }}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+        saving={false}
+      />
+    );
+
+    expect(screen.getByLabelText(/Ciudad/).value).toBe("Cancún");
+    expect(screen.getByLabelText(/Teléfono comercial/).value).toBe(
+      "9999999999"
+    );
+    expect(screen.getByLabelText(/Correo de contacto/).value).toBe(
+      "contacto@torres.com"
+    );
+    expect(screen.getByLabelText(/Dirección comercial/).value).toBe(
+      "Av. Principal 123, Cancún"
+    );
+  });
+
   it("permite guardar y envia los valores recortados", () => {
     const onSave = vi.fn();
     renderModal({ onSave });
@@ -219,8 +251,15 @@ describe("formatters and sanitizers", () => {
     expect(toTitleCase("sUcuRsal tOrRes")).toBe("Sucursal Torres");
     expect(toTitleCase("SUCURSAL CENTRO")).toBe("Sucursal Centro");
     expect(toTitleCase("  plaza   las   americas  ")).toBe(
-      "Plaza Las Americas"
+      "Plaza las Americas"
     );
+  });
+
+  it("toTitleCase preserva siglas y particulas intermedias", () => {
+    expect(toTitleCase("sucursal cdmx norte")).toBe("Sucursal CDMX Norte");
+    expect(toTitleCase("plaza de las torres")).toBe("Plaza de las Torres");
+    expect(toTitleCase("sucursal torres ii")).toBe("Sucursal Torres II");
+    expect(toTitleCase("o'brien la paz")).toBe("O'Brien la Paz");
   });
 
   it("normalizeAddress normaliza la direccion correctamente", () => {

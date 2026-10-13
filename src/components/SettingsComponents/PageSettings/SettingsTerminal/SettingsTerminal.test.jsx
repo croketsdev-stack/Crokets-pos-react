@@ -41,13 +41,17 @@ vi.mock("../../../../services/cashRegisterService", () => ({
   fetchActiveCashSession,
 }));
 
-const { runDiagnostics, checkOnlineStatus } = vi.hoisted(() => ({
-  runDiagnostics: vi.fn(),
-  checkOnlineStatus: vi.fn(),
-}));
+const { runDiagnostics, checkOnlineStatus, checkElectronBridge } = vi.hoisted(
+  () => ({
+    runDiagnostics: vi.fn(),
+    checkOnlineStatus: vi.fn(),
+    checkElectronBridge: vi.fn(),
+  })
+);
 vi.mock("./services/terminalDiagnosticsService", () => ({
   runDiagnostics,
   checkOnlineStatus,
+  checkElectronBridge,
 }));
 
 const { fetchBranchProfile, updateBranchContact } = vi.hoisted(() => ({
@@ -92,6 +96,7 @@ describe("SettingsTerminal", () => {
       services: [],
     });
     checkOnlineStatus.mockReturnValue(true);
+    checkElectronBridge.mockReturnValue(false);
     fetchBranchProfile.mockResolvedValue({
       success: true,
       data: { id: "b1", code: "MID", name: "Mérida" },
