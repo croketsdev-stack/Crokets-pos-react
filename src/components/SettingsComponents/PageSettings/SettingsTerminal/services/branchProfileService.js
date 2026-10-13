@@ -48,6 +48,10 @@ export const updateBranchContact = async (branchId, updates) => {
   }
 
   const allowedUpdates = {};
+  if (updates.name !== undefined) allowedUpdates.name = updates.name;
+  if (updates.city !== undefined) allowedUpdates.city = updates.city;
+  if (updates.timezone !== undefined)
+    allowedUpdates.timezone = updates.timezone;
   if (updates.phone !== undefined) allowedUpdates.phone = updates.phone;
   if (updates.email !== undefined) allowedUpdates.email = updates.email;
   if (updates.address !== undefined) allowedUpdates.address = updates.address;

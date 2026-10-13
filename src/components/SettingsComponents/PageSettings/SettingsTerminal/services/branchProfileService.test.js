@@ -1,5 +1,8 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { fetchBranchProfile, updateBranchContact } from "./branchProfileService";
+import {
+  fetchBranchProfile,
+  updateBranchContact,
+} from "./branchProfileService";
 
 const { supabase } = vi.hoisted(() => {
   const mockFrom = vi.fn();
@@ -40,7 +43,9 @@ describe("branchProfileService", () => {
       const mockQuery = {
         select: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: { message: "DB error" } }),
+        maybeSingle: vi
+          .fn()
+          .mockResolvedValue({ data: null, error: { message: "DB error" } }),
       };
       supabase.from.mockReturnValue(mockQuery);
 
@@ -72,10 +77,18 @@ describe("branchProfileService", () => {
       };
       supabase.from.mockReturnValue(mockQuery);
 
-      const result = await updateBranchContact("b1", { phone: "123", email: "a@b.c", address: "dir" });
+      const updates = {
+        name: "Torres",
+        city: "Cancún",
+        timezone: "America/Cancun",
+        phone: "9999999999",
+        email: "a@b.c",
+        address: "dir",
+      };
+      const result = await updateBranchContact("b1", updates);
       expect(result.success).toBe(true);
       expect(result.data).toEqual(mockData);
-      expect(mockQuery.update).toHaveBeenCalledWith({ phone: "123", email: "a@b.c", address: "dir" });
+      expect(mockQuery.update).toHaveBeenCalledWith(updates);
     });
 
     it("handles error", async () => {
@@ -83,7 +96,9 @@ describe("branchProfileService", () => {
         update: vi.fn().mockReturnThis(),
         eq: vi.fn().mockReturnThis(),
         select: vi.fn().mockReturnThis(),
-        maybeSingle: vi.fn().mockResolvedValue({ data: null, error: { message: "fail" } }),
+        maybeSingle: vi
+          .fn()
+          .mockResolvedValue({ data: null, error: { message: "fail" } }),
       };
       supabase.from.mockReturnValue(mockQuery);
 
