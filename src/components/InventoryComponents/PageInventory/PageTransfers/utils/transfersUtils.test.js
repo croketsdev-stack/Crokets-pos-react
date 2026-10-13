@@ -475,19 +475,21 @@ describe("transfersUtils", () => {
     ];
 
     it("cuenta solo ordenes pending_receipt de la sucursal destino", () => {
-      expect(
-        getPendingReceiptsCount({ orders, currentBranchId: "b1" })
-      ).toBe(1);
+      expect(getPendingReceiptsCount({ orders, currentBranchId: "b1" })).toBe(
+        1
+      );
     });
 
     it("devuelve 0 si no hay pendientes para la sucursal", () => {
-      expect(
-        getPendingReceiptsCount({ orders, currentBranchId: "b3" })
-      ).toBe(0);
+      expect(getPendingReceiptsCount({ orders, currentBranchId: "b3" })).toBe(
+        0
+      );
     });
 
     it("devuelve 0 con orders vacio", () => {
-      expect(getPendingReceiptsCount({ orders: [], currentBranchId: "b1" })).toBe(0);
+      expect(
+        getPendingReceiptsCount({ orders: [], currentBranchId: "b1" })
+      ).toBe(0);
     });
   });
 
@@ -530,9 +532,27 @@ describe("transfersUtils", () => {
 
   describe("getTransfersHistory", () => {
     const orders = [
-      { id: "1", originBranchId: "b1", destinationBranchId: "b2", status: "pending_receipt", createdAt: "2026-01-01T00:00:00Z" },
-      { id: "2", originBranchId: "b2", destinationBranchId: "b3", status: "received_complete", createdAt: "2026-02-01T00:00:00Z" },
-      { id: "3", originBranchId: "b3", destinationBranchId: "b4", status: "pending_receipt", createdAt: "2026-03-01T00:00:00Z" },
+      {
+        id: "1",
+        originBranchId: "b1",
+        destinationBranchId: "b2",
+        status: "pending_receipt",
+        createdAt: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "2",
+        originBranchId: "b2",
+        destinationBranchId: "b3",
+        status: "received_complete",
+        createdAt: "2026-02-01T00:00:00Z",
+      },
+      {
+        id: "3",
+        originBranchId: "b3",
+        destinationBranchId: "b4",
+        status: "pending_receipt",
+        createdAt: "2026-03-01T00:00:00Z",
+      },
     ];
 
     it("devuelve ordenes donde la sucursal es origen o destino, ordenadas por fecha", () => {
@@ -544,19 +564,49 @@ describe("transfersUtils", () => {
     });
 
     it("devuelve arreglo vacio si la sucursal no participa", () => {
-      expect(
-        getTransfersHistory({ orders, currentBranchId: "b5" })
-      ).toEqual([]);
+      expect(getTransfersHistory({ orders, currentBranchId: "b5" })).toEqual(
+        []
+      );
     });
   });
 
   describe("getTransferMetrics", () => {
     const orders = [
-      { id: "1", originBranchId: "b1", destinationBranchId: "b2", status: "pending_receipt", totals: { requestedUnits: 10, receivedUnits: 0, returnedUnits: 0 } },
-      { id: "2", originBranchId: "b2", destinationBranchId: "b1", status: "pending_receipt", totals: { requestedUnits: 5, receivedUnits: 0, returnedUnits: 0 } },
-      { id: "3", originBranchId: "b1", destinationBranchId: "b3", status: "received_complete", totals: { requestedUnits: 0, receivedUnits: 0, returnedUnits: 0 } },
-      { id: "4", originBranchId: "b1", destinationBranchId: "b4", status: "cancelled", totals: { requestedUnits: 0, receivedUnits: 0, returnedUnits: 0 } },
-      { id: "5", originBranchId: "b5", destinationBranchId: "b1", status: "received_complete", totals: { requestedUnits: 0, receivedUnits: 0, returnedUnits: 0 } },
+      {
+        id: "1",
+        originBranchId: "b1",
+        destinationBranchId: "b2",
+        status: "pending_receipt",
+        totals: { requestedUnits: 10, receivedUnits: 0, returnedUnits: 0 },
+      },
+      {
+        id: "2",
+        originBranchId: "b2",
+        destinationBranchId: "b1",
+        status: "pending_receipt",
+        totals: { requestedUnits: 5, receivedUnits: 0, returnedUnits: 0 },
+      },
+      {
+        id: "3",
+        originBranchId: "b1",
+        destinationBranchId: "b3",
+        status: "received_complete",
+        totals: { requestedUnits: 0, receivedUnits: 0, returnedUnits: 0 },
+      },
+      {
+        id: "4",
+        originBranchId: "b1",
+        destinationBranchId: "b4",
+        status: "cancelled",
+        totals: { requestedUnits: 0, receivedUnits: 0, returnedUnits: 0 },
+      },
+      {
+        id: "5",
+        originBranchId: "b5",
+        destinationBranchId: "b1",
+        status: "received_complete",
+        totals: { requestedUnits: 0, receivedUnits: 0, returnedUnits: 0 },
+      },
     ];
 
     it("calcula metricas correctas para la sucursal origen", () => {
@@ -594,7 +644,13 @@ describe("transfersUtils", () => {
 
     it("no cuenta unitsInTransit si remaining <= 0", () => {
       const localOrders = [
-        { id: "1", originBranchId: "b1", destinationBranchId: "b2", status: "pending_receipt", totals: { requestedUnits: 10, receivedUnits: 10, returnedUnits: 0 } },
+        {
+          id: "1",
+          originBranchId: "b1",
+          destinationBranchId: "b2",
+          status: "pending_receipt",
+          totals: { requestedUnits: 10, receivedUnits: 10, returnedUnits: 0 },
+        },
       ];
       const metrics = getTransferMetrics({
         orders: localOrders,

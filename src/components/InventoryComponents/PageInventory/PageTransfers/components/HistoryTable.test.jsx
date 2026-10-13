@@ -46,7 +46,9 @@ describe("HistoryTable", () => {
   it("muestra mensaje vacio si no hay historial", () => {
     render(<HistoryTable {...defaultProps} transferHistory={[]} />);
     expect(
-      screen.getByText("Todavía no hay traspasos registrados para esta sucursal.")
+      screen.getByText(
+        "Todavía no hay traspasos registrados para esta sucursal."
+      )
     ).toBeTruthy();
   });
 
@@ -75,9 +77,7 @@ describe("HistoryTable", () => {
     render(
       <HistoryTable {...defaultProps} cancellableTransferIds={new Set()} />
     );
-    expect(
-      screen.queryByRole("button", { name: "Cancelar" })
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: "Cancelar" })).toBeNull();
   });
 
   it("onCancelClick se dispara al hacer clic en Cancelar", () => {
@@ -89,6 +89,8 @@ describe("HistoryTable", () => {
 
   it("boton Cancelar esta deshabilitado durante submitting", () => {
     render(<HistoryTable {...defaultProps} submitting={true} />);
-    expect(screen.getByRole("button", { name: "Cancelar" }).hasAttribute("disabled")).toBe(true);
+    expect(
+      screen.getByRole("button", { name: "Cancelar" }).hasAttribute("disabled")
+    ).toBe(true);
   });
 });
