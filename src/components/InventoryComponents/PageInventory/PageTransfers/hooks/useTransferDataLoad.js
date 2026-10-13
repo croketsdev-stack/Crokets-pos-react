@@ -11,6 +11,7 @@ import {
   getTransferMetrics,
   getTransfersHistory,
 } from "../utils/transfersUtils";
+import useTransfersRealtime from "./useTransfersRealtime";
 
 const DEFAULT_TAB = "send";
 
@@ -74,24 +75,12 @@ const useTransferDataLoad = ({
     reloadOrders(); // eslint-disable-line react-hooks/set-state-in-effect -- carga inicial asincrona de ordenes (setLoading/setData inside useCallback pattern standard)
   }, [reloadOrders]);
 
-  useEffect(() => {
-    if (!isActive) return undefined;
-
-    let interval = null;
-    const runLoop = async () => {
-      try {
-        await Promise.all([reloadOrders(), reloadProductsSilently()]);
-      } catch (err) {
-        console.error("Polling automático traspasos/inventario falló:", err);
-      }
-    };
-
-    interval = setInterval(runLoop, 10 * 1000);
-
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isActive, reloadOrders, reloadProductsSilently]);
+  useTransfersRealtime({
+    branchId: branch?.id || null,
+    refreshOrdersSilently: reloadOrders,
+    refreshProductsSilently: reloadProductsSilently,
+    enabled: isActive,
+  });
 
   const destinationOptions = useMemo(() => {
     return branchOptions.filter((option) => option.id !== branch?.id);
