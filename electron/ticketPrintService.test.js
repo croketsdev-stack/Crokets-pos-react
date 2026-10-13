@@ -160,7 +160,7 @@ describe("electron ticketPrintService", () => {
       expect(html).toContain("size: 58mm 300mm; margin: 0");
       expect(html).toContain("Courier New");
       expect(html).toContain("font-size: 9pt");
-      expect(html).toContain("<pre>LINEA &lt;1&gt;\nLINEA 2</pre>");
+      expect(html).toContain("<pre>LINEA &lt;1&gt;\nLINEA 2\n\n</pre>");
     });
 
     it("cambia el ancho de pagina segun el perfil de 80mm", () => {
@@ -262,7 +262,7 @@ describe("electron ticketPrintService", () => {
       );
       expect(
         decodeURIComponent(printWindow.loadURL.mock.calls[0][0])
-      ).toContain("<pre>TICKET</pre>");
+      ).toContain("<pre>TICKET\n\n</pre>");
       expect(printWindow.webContents.print).toHaveBeenCalledWith(
         expect.objectContaining({
           silent: true,

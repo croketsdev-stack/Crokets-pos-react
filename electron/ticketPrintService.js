@@ -17,6 +17,7 @@
 const MICRONS_PER_MM = 1000;
 const DEFAULT_PAGE_HEIGHT_MM = 300;
 const DEFAULT_COPIES = 1;
+const DEFAULT_FEED_LINES = 2;
 const ABORTED_LOAD_CODE = -3;
 
 const TICKET_PRINT_PROFILES = Object.freeze({
@@ -55,6 +56,21 @@ function resolveTicketPrintProfile(profile) {
 function positiveNumberOr(value, fallback) {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+}
+
+/**
+ * Saltos de linea en blanco al final del ticket, antes de que el driver corte el
+ * papel. `0` es valido (sin espaciado extra); cualquier valor no numerico cae al
+ * default de 2.
+ */
+function resolveFeedLines(value) {
+  if (value === undefined || value === null || value === "") {
+    return DEFAULT_FEED_LINES;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed)
+    ? Math.max(0, Math.trunc(parsed))
+    : DEFAULT_FEED_LINES;
 }
 
 /**
@@ -99,7 +115,10 @@ function buildTicketPrintOptions(profile, options) {
   return printOptions;
 }
 
-function buildTicketPrintDocument(ticketText, profile) {
+function buildTicketPrintDocument(ticketText, profile, options = {}) {
+  const feedLines = resolveFeedLines(options?.feedLines);
+  const bodyText = `${ticketText}${"\n".repeat(feedLines)}`;
+
   return [
     "<!doctype html>",
     '<html><head><meta charset="utf-8">',
@@ -108,7 +127,7 @@ function buildTicketPrintDocument(ticketText, profile) {
     "body { font-family: 'Courier New', Courier, monospace;",
     `font-size: ${profile.fontSizePt}pt; line-height: 1.15; }`,
     "</style></head>",
-    `<body><pre>${escapeHtml(ticketText)}</pre></body></html>`,
+    `<body><pre>${escapeHtml(bodyText)}</pre></body></html>`,
   ].join("");
 }
 
@@ -192,7 +211,7 @@ async function printTicket({ BrowserWindow, ticketText, options = {} }) {
     printWindow = createPrintWindow(BrowserWindow);
     await loadTicketDocument(
       printWindow,
-      toDataUrl(buildTicketPrintDocument(ticketText, profile))
+      toDataUrl(buildTicketPrintDocument(ticketText, profile, options))
     );
 
     const result = await printWindow.webContents.print(

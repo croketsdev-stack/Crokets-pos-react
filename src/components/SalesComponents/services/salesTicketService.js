@@ -5,6 +5,7 @@ import {
   getTicketPrintProfile,
   getSelectedPrinter,
   getTicketCopies,
+  getTicketFeedLines,
 } from "../../../services/printSettingsService";
 import { getTicketCustomization } from "../../SettingsComponents/PageSettings/SettingsPrinters/services/ticketCustomizationService";
 import {
@@ -360,6 +361,7 @@ export const printSaleTicket = async ({
       profile: getTicketPrintProfile(),
       deviceName: getSelectedPrinter && getSelectedPrinter(),
       copies: getTicketCopies && getTicketCopies(),
+      feedLines: getTicketFeedLines && getTicketFeedLines(),
     });
     if (!printResult?.success)
       console.error(

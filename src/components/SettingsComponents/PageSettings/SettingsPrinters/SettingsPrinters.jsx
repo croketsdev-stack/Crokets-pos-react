@@ -27,7 +27,7 @@ const SettingsPrinters = () => {
     savingTemplate,
     printers,
     selectedPrinter,
-    setSelectedPrinter,
+    handleSelectPrinter,
     printersLoading,
     printersError,
     viewMode,
@@ -63,7 +63,7 @@ const SettingsPrinters = () => {
           <PrinterDeviceCard
             printers={printers}
             selectedPrinter={selectedPrinter}
-            setSelectedPrinter={setSelectedPrinter}
+            onSelectPrinter={handleSelectPrinter}
             printersLoading={printersLoading}
             printersError={printersError}
             refreshPrinters={refreshPrinters}

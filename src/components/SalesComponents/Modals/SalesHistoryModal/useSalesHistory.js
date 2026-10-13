@@ -27,6 +27,7 @@ import {
   getTicketPrintProfile,
   getSelectedPrinter,
   getTicketCopies,
+  getTicketFeedLines,
 } from "../../../../services/printSettingsService";
 import { getTicketCustomization } from "../../../SettingsComponents/PageSettings/SettingsPrinters/services/ticketCustomizationService";
 import { buildTicketText } from "../../../../utils/ticket/ticketBuilder";
@@ -671,6 +672,7 @@ export const useSalesHistory = ({
         profile: getTicketPrintProfile(),
         deviceName: getSelectedPrinter && getSelectedPrinter(),
         copies: getTicketCopies && getTicketCopies(),
+        feedLines: getTicketFeedLines && getTicketFeedLines(),
       });
       if (!result?.success)
         throw new Error(result?.message || "No se pudo imprimir la copia.", {

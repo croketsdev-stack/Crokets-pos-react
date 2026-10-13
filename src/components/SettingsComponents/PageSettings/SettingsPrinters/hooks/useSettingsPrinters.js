@@ -14,6 +14,12 @@ import {
   getPrintMode,
   savePrintMode,
   getTicketPrintProfile,
+  getSelectedPrinter,
+  saveSelectedPrinter,
+  getTicketCopies,
+  saveTicketCopies,
+  getTicketFeedLines,
+  saveTicketFeedLines,
 } from "../../../../../services/printSettingsService";
 import {
   DEFAULT_TICKET_CUSTOMIZATION,
@@ -43,8 +49,8 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
   const [printFeedback, setPrintFeedback] = useState(DEFAULT_FEEDBACK);
   const [drawerFeedback, setDrawerFeedback] = useState(DEFAULT_FEEDBACK);
 
-  const [copies, setCopies] = useState(1);
-  const [feedLines, setFeedLines] = useState(2);
+  const [copies, setCopies] = useState(() => getTicketCopies());
+  const [feedLines, setFeedLines] = useState(() => getTicketFeedLines());
   const [template, setTemplate] = useState(() => ({
     ...DEFAULT_TICKET_CUSTOMIZATION,
   }));
@@ -52,7 +58,9 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
   const [savingTemplate, setSavingTemplate] = useState(false);
 
   const [printers, setPrinters] = useState([]);
-  const [selectedPrinter, setSelectedPrinter] = useState("");
+  const [selectedPrinter, setSelectedPrinter] = useState(() =>
+    getSelectedPrinter()
+  );
   const [printersLoading, setPrintersLoading] = useState(false);
   const [printersError, setPrintersError] = useState(null);
 
@@ -81,6 +89,29 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
     };
   }, [branchId]);
 
+  const syncSelectedPrinter = useCallback((availablePrinters = []) => {
+    const stored = getSelectedPrinter();
+    const names = new Set(
+      availablePrinters
+        .map((printer) => printer?.name || printer?.deviceName || "")
+        .filter(Boolean)
+    );
+
+    if (stored && names.has(stored)) {
+      setSelectedPrinter(stored);
+      return stored;
+    }
+
+    const defaultPrinter =
+      availablePrinters.find((printer) => printer.isDefault) ||
+      availablePrinters[0];
+    const fallbackName =
+      defaultPrinter?.name || defaultPrinter?.deviceName || "";
+    saveSelectedPrinter(fallbackName);
+    setSelectedPrinter(fallbackName);
+    return fallbackName;
+  }, []);
+
   const refreshPrinters = useCallback(async () => {
     setPrintersLoading(true);
     setPrintersError(null);
@@ -93,18 +124,13 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
         return;
       }
       setPrinters(result.printers || []);
-      setSelectedPrinter((prev) => {
-        if (prev) return prev;
-        const defaultPrinter =
-          result.printers?.find((p) => p.isDefault) || result.printers?.[0];
-        return defaultPrinter?.name || defaultPrinter?.deviceName || "";
-      });
+      syncSelectedPrinter(result.printers || []);
     } catch (error) {
       console.error("Error al refrescar impresoras:", error);
       setPrintersLoading(false);
       setPrintersError("Error al obtener impresoras");
     }
-  }, []);
+  }, [syncSelectedPrinter]);
 
   useEffect(() => {
     let isMounted = true;
@@ -123,12 +149,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
             return;
           }
           setPrinters(result.printers || []);
-          setSelectedPrinter((prev) => {
-            if (prev) return prev;
-            const defaultPrinter =
-              result.printers?.find((p) => p.isDefault) || result.printers?.[0];
-            return defaultPrinter?.name || defaultPrinter?.deviceName || "";
-          });
+          syncSelectedPrinter(result.printers || []);
         } catch (error) {
           console.error("Error cargando impresoras iniciales:", error);
           if (!isMounted) return;
@@ -140,7 +161,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
     return () => {
       isMounted = false;
     };
-  }, [isElectron]);
+  }, [isElectron, syncSelectedPrinter]);
 
   const handleWidthChange = useCallback((event) => {
     const result = saveTicketWidthMm(event.target.value);
@@ -169,13 +190,18 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
   }, []);
 
   const handleCopiesChange = useCallback((value) => {
-    const num = Math.max(1, Math.min(5, Number(value) || 1));
-    setCopies(num);
+    const result = saveTicketCopies(value);
+    setCopies(result.copies);
   }, []);
 
   const handleFeedLinesChange = useCallback((value) => {
-    const num = Math.max(1, Math.min(5, Number(value) || 2));
-    setFeedLines(num);
+    const result = saveTicketFeedLines(value);
+    setFeedLines(result.feedLines);
+  }, []);
+
+  const handleSelectPrinter = useCallback((printerName) => {
+    saveSelectedPrinter(printerName);
+    setSelectedPrinter(printerName);
   }, []);
 
   const handleTemplateChange = useCallback((key, value) => {
@@ -241,6 +267,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
       profile: getTicketPrintProfile(),
       deviceName: selectedPrinter || undefined,
       copies,
+      feedLines: getTicketFeedLines(),
     });
     setPrinting(false);
     if (!result.success) {
@@ -331,7 +358,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
     savingTemplate,
     printers,
     selectedPrinter,
-    setSelectedPrinter,
+    handleSelectPrinter,
     printersLoading,
     printersError,
     viewMode,

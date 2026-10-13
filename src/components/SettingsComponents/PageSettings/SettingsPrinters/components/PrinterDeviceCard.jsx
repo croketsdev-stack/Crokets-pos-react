@@ -6,7 +6,7 @@ import warningIcon from "../../../../../assets/icons/triangle-exclamation-solid-
 const PrinterDeviceCard = ({
   printers = [],
   selectedPrinter = "",
-  setSelectedPrinter,
+  onSelectPrinter,
   printersLoading = false,
   printersError = null,
   refreshPrinters,
@@ -42,7 +42,7 @@ const PrinterDeviceCard = ({
             id="printer-select"
             className={styles.input}
             value={selectedPrinter}
-            onChange={(e) => setSelectedPrinter(e.target.value)}
+            onChange={(e) => onSelectPrinter(e.target.value)}
             disabled={printersLoading}
           >
             <option value="">Usar impresora predeterminada</option>

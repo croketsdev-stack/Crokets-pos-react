@@ -28,7 +28,7 @@ const mockHookReturn = {
   savingTemplate: false,
   printers: [{ name: "POS-80", displayName: "POS-80", isDefault: true }],
   selectedPrinter: "POS-80",
-  setSelectedPrinter: vi.fn(),
+  handleSelectPrinter: vi.fn(),
   printersLoading: false,
   printersError: null,
   viewMode: "venta",
