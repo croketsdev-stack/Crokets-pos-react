@@ -129,7 +129,7 @@ describe("BranchEditModal", () => {
     renderModal({ onSave });
 
     fireEvent.change(screen.getByLabelText(/Nombre de sucursal/), {
-      target: { value: "  sucursal  torres   sur  " },
+      target: { value: "  sucursal  torres   centro  " },
     });
     fireEvent.change(screen.getByLabelText(/Ciudad/), {
       target: { value: "cAnCun" },
@@ -138,7 +138,7 @@ describe("BranchEditModal", () => {
       target: { value: "CONTACTO@SUCURSAL.COM" },
     });
     fireEvent.change(screen.getByLabelText(/Teléfono comercial/), {
-      target: { value: "9981234567" },
+      target: { value: "(998)-123-4567" },
     });
     fireEvent.change(screen.getByLabelText(/Dirección comercial/), {
       target: { value: "  calle 50   numero 123  " },
@@ -148,7 +148,7 @@ describe("BranchEditModal", () => {
     fireEvent.click(saveButton);
 
     expect(onSave).toHaveBeenCalledWith({
-      name: "Sucursal Torres Sur",
+      name: "Sucursal Torres Centro",
       city: "Cancun",
       email: "contacto@sucursal.com",
       phone: "9981234567",
@@ -217,7 +217,7 @@ describe("buildBranchForm", () => {
 describe("formatters and sanitizers", () => {
   it("toTitleCase transforma correctamente", () => {
     expect(toTitleCase("sUcuRsal tOrRes")).toBe("Sucursal Torres");
-    expect(toTitleCase("SUCURSAL CENTRO NORTE")).toBe("Sucursal Centro Norte");
+    expect(toTitleCase("SUCURSAL CENTRO")).toBe("Sucursal Centro");
     expect(toTitleCase("  plaza   las   americas  ")).toBe("Plaza Las Americas");
   });
 
