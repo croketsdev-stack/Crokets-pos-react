@@ -16,6 +16,7 @@ const IPC_CHANNELS = [
   "configure-zoom",
   "reset-zoom",
   "get-zoom-debug",
+  "toggle-fullscreen",
   "print-ticket",
   "open-cash-drawer",
   "get-printers",
@@ -56,6 +57,7 @@ const createFakeWindow = (webContents) => {
     }),
     show: vi.fn(),
     setFullScreen: vi.fn(),
+    isFullScreen: vi.fn(() => false),
     getContentBounds: vi.fn(() => ({ width: 800, height: 600 })),
     isDestroyed: vi.fn(() => false),
     handlers,
@@ -256,7 +258,7 @@ describe("electron mainProcess", () => {
   });
 
   describe("registerIpcHandlers", () => {
-    it("registra los siete canales esperados", () => {
+    it("registra los diez canales esperados", () => {
       const { handlers } = buildIpcHarness();
 
       expect(Object.keys(handlers).sort()).toEqual([...IPC_CHANNELS].sort());
@@ -388,6 +390,45 @@ describe("electron mainProcess", () => {
         zoomFactor: null,
         contentBounds: null,
         state: null,
+      });
+    });
+
+    describe("toggle-fullscreen", () => {
+      it("activa la pantalla completa cuando la ventana no esta en fullscreen", async () => {
+        const webContents = createWebContents();
+        const win = createFakeWindow(webContents);
+        win.isFullScreen = vi.fn(() => false);
+        const { handlers } = buildIpcHarness({
+          BrowserWindow: { fromWebContents: vi.fn(() => win) },
+        });
+
+        await expect(
+          handlers["toggle-fullscreen"]({ sender: webContents })
+        ).resolves.toEqual({ success: true, fullscreen: true });
+        expect(win.setFullScreen).toHaveBeenCalledWith(true);
+      });
+
+      it("sale de pantalla completa cuando la ventana ya esta en fullscreen", async () => {
+        const webContents = createWebContents();
+        const win = createFakeWindow(webContents);
+        win.isFullScreen = vi.fn(() => true);
+        const { handlers } = buildIpcHarness({
+          BrowserWindow: { fromWebContents: vi.fn(() => win) },
+        });
+
+        await expect(
+          handlers["toggle-fullscreen"]({ sender: webContents })
+        ).resolves.toEqual({ success: true, fullscreen: false });
+        expect(win.setFullScreen).toHaveBeenCalledWith(false);
+      });
+
+      it("devuelve fallo cuando no hay ventana asociada", async () => {
+        const webContents = createWebContents();
+        const { handlers } = buildIpcHarness();
+
+        await expect(
+          handlers["toggle-fullscreen"]({ sender: webContents })
+        ).resolves.toEqual({ success: false, fullscreen: false });
       });
     });
 
