@@ -2092,8 +2092,8 @@ ensuciar el mensaje que ve el usuario; `salesTicketService.js` registra el `erro
 `useSalesHistory.js` —que solo mostraba el `alert` sin registrar nada— ahora conserva su
 `console.error` de trazabilidad.
 
-**Configuración de la impresora física (pendiente, sin hardware en el entorno).** La vía quedó
-parametrizada justamente para no requerir un cambio de código cuando exista la impresora:
+**Configuración de la impresora física (resuelto 12 oct 2026, rama `feature/settings-users-redesign`).**
+La vía quedó parametrizada justamente para no requerir un cambio de código cuando exista la impresora:
 
 - `options.profile`: `"58mm"` (por omisión) o `"80mm"`. Define el ancho de `@page` y el tamaño de
   fuente.
@@ -2103,9 +2103,17 @@ parametrizada justamente para no requerir un cambio de código cuando exista la 
   en CSS. El alto por omisión es un tramo de rollo de 300 mm y el driver corta al final de la última
   línea con contenido.
 - `options.copies` y `options.silent`: multiplicity y si se abre el diálogo del sistema.
+- `options.feedLines`: líneas en blanco finales de avance de papel (0 permitido, default 2). Lo
+  aporta `getTicketFeedLines()` y lo consumen los tres llamadores junto con `copies` y `deviceName`.
 
-Los llamadores todavía no pasan opciones (usan el perfil de 58 mm por omisión), así que el ajuste por
-sucursal queda como el siguiente paso natural cuando sepas qué hardware se usará.
+**Actualización (12 oct 2026):** la persistencia de hardware quedó cableada de extremo a extremo en
+`SettingsPrinters`. `useSettingsPrinters` hidrata `selectedPrinter`, `copies` y `feedLines` desde
+`localStorage` al montar; `handleSelectPrinter`, `handleCopiesChange` y `handleFeedLinesChange` los
+persisten; el clamping de valores fraccionarios nunca devuelve 0; y los tres llamadores
+(`handleTestPrint`, `salesTicketService.js` y `useSalesHistory.js`) ahora pasan
+`{ deviceName, copies, feedLines }` a `printTicket`, así que el ajuste de impresora ya afecta la
+emisión real y no solo la pantalla de configuración. Los límites de la RPC `get_branch_by_device`
+siguen siendo la vía para resolver la sucursal por terminal cuando exista el hardware (ver #30).
 
 ---
 
