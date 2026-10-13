@@ -2585,3 +2585,31 @@ La rama cumple rigurosamente con todos los gates de calidad y el protocolo estri
 ### 4. Veredicto final
 
 **APROBADO — Auditoría de Cierre. Ciclo de revisión del PR concluido.** Los cinco comandos mecánicos pasan en verde, los hallazgos F1–F9 quedan cerrados con evidencia reproducible en HEAD y la mejora UX/UI de `f3170e7` cumple sin regresiones (suite completa en verde). Única nota no bloqueante: los 8 warnings de `no-unused-vars` en `useSalesHistory.js` son deuda legacy preexistente, no introducida por esta rama.
+
+---
+
+## Auditoría 2 de Cierre — RAMA `feature/settings-terminal-redesign` (13 de octubre de 2026)
+
+**Base:** `origin/main` (`b64a944`) · **HEAD:** `87872a9`
+**Alcance:** Restructuración completa del módulo Terminal y Sucursal (`/settings/terminal`), componentes modulares 2x2, modal accesible de edición de sucursal con cierre por Escape y validaciones blindadas (Title Case, 10 dígitos, email lowercase), desacople de pantalla completa y diagnóstico de conectividad en tiempo real.
+**Veredicto:** APROBADO SIN RESERVAS.
+
+### 1. Comandos Mecánicos de Verificación
+
+| Verificación         | Comando                                      | Resultado                                          | Estado |
+| :------------------- | :------------------------------------------- | :------------------------------------------------- | :----: |
+| Reglas AGENTS.md     | `npm run check:agents`                       | 0 emojis, 0 !important, 0 console.log/warn, EOF OK |  PASS  |
+| Linter incremental   | `git diff ... \| xargs npx eslint`           | 0 errores, 0 warnings (EXIT 0)                     |  PASS  |
+| Prettier incremental | `git diff ... \| xargs npx prettier --check` | 100% de archivos formateados (EXIT 0)              |  PASS  |
+| Higiene de Git       | `git diff --check origin/main..HEAD`         | 0 espacios colgantes                               |  PASS  |
+| Suite Vitest         | `npm test -- --run`                          | 132/132 suites pasadas (1,822 tests en verde)      |  PASS  |
+| Compilación Frontend | `npm run build:frontend`                     | Compilación exitosa con Vite en ~4.0s              |  PASS  |
+
+### 2. Cierre Definitivo de Hallazgos
+
+- **F1 (ESLint):** Resuelto en `terminalDiagnosticsService.js` mediante llamada segura a query y comprobación de `AbortController`.
+- **F2 (Prettier):** 4 archivos normalizados bajo el estándar Prettier del proyecto.
+
+### 3. Veredicto Final
+
+**APROBADO PARA MERGE.** La rama cumple rigurosamente con los 8 gates de calidad de `PR_REVIEW.md` y `AGENTS.md`.
