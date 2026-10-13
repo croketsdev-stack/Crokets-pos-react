@@ -2502,3 +2502,86 @@ La rama cumple rigurosamente con todos los gates de calidad y el protocolo estri
 ### 3. Veredicto final
 
 **APROBADO.** La interfaz queda limpia, sin elementos DOM vacíos, sin estilos muertos y con accesibilidad reforzada: el cierre del modal conserva tres mecanismos (botón X con nombre accesible explícito, tecla Escape y clic en el backdrop), el componente quedó en 134 líneas y las tres verificaciones automáticas (pruebas, compilación y linter) pasan en verde.
+
+---
+
+## Informe de Auditoría — RAMA `feature/settings-users-redesign` (12 de octubre de 2026)
+
+**Base:** `origin/feature/settings-users-redesign` (`c827e40`) · **HEAD auditable:** `12e750d`
+**Alcance:** pantalla de impresoras (`SettingsPrinters`) + persistencia de hardware y plantilla comercial del ticket.
+**Veredicto:** CAMBIOS REQUERIDOS. Nueve hallazgos (F1–F9) resueltos en 5 commits atómicos sobre la misma rama (HEAD resultante `4c878e8`).
+
+### 1. Verbosed resolución de hallazgos F1–F9
+
+| Hallazgo                                                   | Severidad   | Corrección                                                                                                                                                                                                                                                                                                                                   | Commit                   |
+| ---------------------------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------ |
+| F1: persistencia de impresora/copias/saltos nunca cableada | Mayor       | `useSettingsPrinters` inicializa desde `getSelectedPrinter`/`getTicketCopies`/`getTicketFeedLines`, persiste vía `saveSelectedPrinter`/`saveTicketCopies`/`saveTicketFeedLines` y expone `handleSelectPrinter`; `syncSelectedPrinter` honra la impresora almacenada si sigue en la lista y persiste el default del sistema en caso contrario | `579cfaf`                |
+| F3: `feedLines` inerte                                     | Mayor       | `buildTicketPrintDocument` acepta `options.feedLines` (0 válido, no numérico→2) y `printTicket` lo propaga; los tres llamadores (`handleTestPrint`, `salesTicketService`, `useSalesHistory`) envían `feedLines: getTicketFeedLines()`                                                                                                        | `579cfaf` + `a39334b`    |
+| F4: clamping fraccionario entregaba 0                      | Menor       | `clampInteger` truncante con fallback: `saveTicketCopies(0.5)→1`, `saveTicketFeedLines(0.5)→2`                                                                                                                                                                                                                                               | `579cfaf`                |
+| F2: slogan/rfc/toggles eran solo previsualización          | Mayor       | `buildTicketText({ customization })` inyecta slogan y RFC centrados tras `CROKETS` y gatea dirección, teléfono, cajero, puntos y notas con los toggles de plantilla; los flujos reales de venta y reimpresión los aplican; `TicketLivePreview` se simplifica delegando en el builder (`customization: template`)                             | `a39334b`                |
+| F5: efecto inicial duplicaba `refreshPrinters`             | Menor       | El efecto inicial llama `refreshPrinters()` (vía microtask por la regla `set-state-in-effect`)                                                                                                                                                                                                                                               | `600a3d6`                |
+| F6: exports muertos/constantes duplicadas                  | Menor       | Se eliminan `TICKET_WIDTH_OPTIONS_LIST`, `PRINT_MODE_LABELS` y `buildTestTicketText` del contrato del hook; `TicketFormatCard` reutiliza `TICKET_WIDTH_OPTIONS` de `printSettingsService`; se corrige comentario de `preload.js`                                                                                                             | `600a3d6`                |
+| F7: pruebas engañosas                                      | Menor       | Clamping fraccionario, persistencia real en `localStorage`, hidratación al montar, respeto de la impresora almacenada, caché local, paths insert/update de `system_settings`, golden de `customization` y `feedLines` del servicio de impresión                                                                                              | `4c878e8`                |
+| F8: docs desactualizadas                                   | Menor       | Este informe + entrada de actualización en `KNOWN_ISSUES.md`                                                                                                                                                                                                                                                                                 | commit docs de esta rama |
+| F9: import cruzado Sales → SettingsPrinters/services       | Observación | `ticketCustomizationService` (+ tests) migra a `src/services/`; importeros actualizados; carpeta `services/` de `SettingsPrinters` eliminada                                                                                                                                                                                                 | `600a3d6`                |
+
+### 2. Cambios estructurales
+
+- **`src/services/`** (DIP y modularidad): `ticketCustomizationService.js` y su test pasan de `PageSettings/SettingsPrinters/services/` a `src/services/`. Ningún componente de UI importa `supabase` directamente.
+- **Contrato de `buildTicketText`:** nuevo parámetro opcional `customization`; con `null`, `undefined` o `{}` la salida es byte a byte idéntica a la previa (verificado por los 15 golden tests + test explícito de paridad).
+- **`electron/ticketPrintService`:** soporta `feedLines` (0..N, default 2) sin romper `copies`, `deviceName` ni perfiles 58/80 mm.
+
+### 3. Comprobaciones sobre HEAD `4c878e8`
+
+| Verificación                        | Resultado                                                         |
+| ----------------------------------- | ----------------------------------------------------------------- |
+| ESLint incremental (diff vs base)   | EXIT 0, 0 errores (warnings preexistentes en `useSalesHistory`)   |
+| Prettier incremental (diff vs base) | todas las rutas OK                                                |
+| `npm run check:agents`              | OK (0 emojis, 0 `!important`, 0 `console.log/warn`, EOF newlines) |
+| `npm test`                          | suite completa en verde                                           |
+| `npm run build:frontend`            | EXIT 0                                                            |
+
+### 4. Veredicto final
+
+**APROBADO tras resolución de F1–F9 en 5 commits atómicos.** La rama queda con hardware (impresora/copias/saltos) y plantilla comercial (slogan/RFC/toggles) persistidos y aplicados en la emisión real de tickets, sin cambios de salida para tickets no personalizados.
+
+---
+
+## Auditoría 2 de Cierre — RAMA `feature/settings-users-redesign` (13 de octubre de 2026)
+
+**Base:** `origin/feature/settings-users-redesign` (`c827e40`) · **HEAD:** `f3170e7`
+**Commits evaluados:** `579cfaf`, `600a3d6`, `a39334b`, `4c878e8`, `babfc20`, `f3170e7`
+**Objetivo:** dar por concluido el ciclo de revisión del PR verificando el cierre definitivo de F1–F9 y la mejora UX/UI del commit final. Árbol de trabajo limpio al cierre.
+
+### 1. Comandos mecánicos
+
+| Verificación                        | Resultado                                                                                                  |
+| ----------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| ESLint incremental (diff vs base)   | EXIT 0, 0 errores (8 warnings `no-unused-vars` preexistentes en `useSalesHistory.js`, confirmados en base) |
+| Prettier incremental (diff vs base) | todas las rutas OK                                                                                         |
+| `npm run check:agents`              | OK (0 emojis, 0 `!important`, 0 `console.log/warn`, EOF newlines)                                          |
+| `npm test`                          | 126 archivos / 1766 tests pasados                                                                          |
+| `npm run build:frontend`            | EXIT 0 (advertencia de chunk >500 kB preexistente)                                                         |
+
+### 2. Cierre definitivo de hallazgos (F1–F9)
+
+| Hallazgo                     | Evidencia en HEAD                                                                                                                                                                                 | Estado  |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- |
+| F1 persistencia de hardware  | `useSettingsPrinters.js:42-51` hidrata `copies`/`feedLines`/`selectedPrinter` desde `localStorage`; mutaciones persisten; `handleTestPrint` envía `{ profile, deviceName, copies, feedLines }`    | CERRADO |
+| F2 plantilla real en emisión | `buildTicketText` aplica slogan/RFC y toggles con guard `customization = null`; `salesTicketService.js:299-358` y `useSalesHistory.js:587-669` pasan `customization`; golden byte a byte intactos | CERRADO |
+| F3 feedLines                 | `electron/ticketPrintService.js` resuelve y anexa los saltos antes del corte (0 válido, default 2); los tres llamadores lo envían                                                                 | CERRADO |
+| F4 clamping fraccionario     | `clampInteger` con fallback: `saveTicketCopies(0.5)→1`, `saveTicketFeedLines(0.5)→2`                                                                                                              | CERRADO |
+| F5 DRY                       | un único efecto delega en `refreshPrinters()` (microtask por `set-state-in-effect`)                                                                                                               | CERRADO |
+| F6 higiene                   | `TICKET_WIDTH_OPTIONS_LIST`/`PRINT_MODE_LABELS` eliminados; `TicketFormatCard` reutiliza `TICKET_WIDTH_OPTIONS` del servicio                                                                      | CERRADO |
+| F7 tests                     | clamping fraccionario, hidratación, fallback de caché, insert/update de `system_settings`, golden de `customization` y `feedLines`                                                                | CERRADO |
+| F8 docs                      | entrada de este informe + `KNOWN_ISSUES.md` #59 actualizado (12 oct 2026)                                                                                                                         | CERRADO |
+| F9 arquitectura              | `ticketCustomizationService` en `src/services/` con única dependencia `../lib/supabaseClient`; sin imports cruzados                                                                               | CERRADO |
+
+### 3. Revisión de mejoras UX/UI (commit `f3170e7`)
+
+- **Proporciones del simulador:** `.previewBox` con `box-sizing: border-box`, `width: fit-content; max-width: 100%`, `font-size: 0.75rem`, `padding: 1.25rem 0.85rem 1.5rem`; `.preview58 { width: calc(32ch + 1.7rem); }` y `.preview80 { width: calc(42ch + 1.7rem); }` (el doble padding queda dentro del ancho, sin franjas blancas a la derecha de `====`). `.ticketPre` conserva Courier New / 0.75rem / 1.15 y declara `text-align: left` y `display: block`.
+- **Banners de feedback:** estructura `.feedbackBanner` con `.feedbackSuccess`/`.feedbackError`/`.feedbackIcon` e `@keyframes fadeIn`; `TicketContentCard`, `TicketDiagnosticCard` (print y drawer) y `TicketFormatCard` usan `<div role="alert"/role="status">` con iconos de `assets/icons/` (`circle-check-solid-full`, `triangle-exclamation-solid-full`) y `aria-hidden`; auto-limpieza de 3.5 s para `printFeedback` y `drawerFeedback` en `useSettingsPrinters.js` (patrón de `templateFeedback`). Clase muerta `.statusMessage` eliminada.
+
+### 4. Veredicto final
+
+**APROBADO — Auditoría de Cierre. Ciclo de revisión del PR concluido.** Los cinco comandos mecánicos pasan en verde, los hallazgos F1–F9 quedan cerrados con evidencia reproducible en HEAD y la mejora UX/UI de `f3170e7` cumple sin regresiones (suite completa en verde). Única nota no bloqueante: los 8 warnings de `no-unused-vars` en `useSalesHistory.js` son deuda legacy preexistente, no introducida por esta rama.

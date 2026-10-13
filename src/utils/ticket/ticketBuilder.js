@@ -40,7 +40,10 @@ export const buildTicketText = ({
   footer = {},
   isReprint = false,
   reprintedAt = null,
+  customization = null,
 }) => {
+  const custom =
+    customization && typeof customization === "object" ? customization : null;
   const saleDate = sale.created_at || sale.date || new Date();
   const cancelledAt = sale.cancelled_at || null;
   const isCancelled =
@@ -82,7 +85,7 @@ export const buildTicketText = ({
   const customerPointsBalance = getCustomerPointsBalance(sale);
 
   const lines = [
-    ...buildHeaderSection(branch),
+    ...buildHeaderSection(branch, custom),
     ...buildSaleInfoSection({
       sale,
       saleDate,
@@ -92,6 +95,7 @@ export const buildTicketText = ({
       isRewardOnlySale,
       hasRewards,
       isCancelled,
+      showCashierName: custom?.showCashierName !== false,
     }),
     ...buildItemsSection(items, { isCancelled, rewardRedemptions }),
     ...buildTotalsSection(items, sale),
@@ -110,6 +114,7 @@ export const buildTicketText = ({
       hasPartialReturns,
       isCancelled,
       netPoints,
+      showCustomerPoints: custom?.showCustomerPoints !== false,
     }),
     ...buildRewardsSection(rewardRedemptions, {
       isCancelled,
@@ -119,7 +124,7 @@ export const buildTicketText = ({
     ...buildCancellationSection(sale, { isCancelled, cancelledAt }),
     ...buildPartialReturnsSection(partialReturns, { sale, returnedPoints }),
     ...buildReprintSection(isReprint, reprintedAt),
-    ...buildNotesSection(sale),
+    ...buildNotesSection(sale, { showNotes: custom?.showSaleNotes !== false }),
     ...buildFooterSection(footer),
   ];
 

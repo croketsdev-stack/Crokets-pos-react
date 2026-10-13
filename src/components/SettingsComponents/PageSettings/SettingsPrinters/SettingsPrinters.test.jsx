@@ -1,79 +1,142 @@
-import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent } from "@testing-library/react";
+import { describe, it, expect, vi, beforeEach } from "vitest";
 import SettingsPrinters from "./SettingsPrinters";
 
-const { printTicket } = vi.hoisted(() => ({ printTicket: vi.fn() }));
+const mockHookReturn = {
+  widthMm: 58,
+  printMode: "auto",
+  preferencesFeedback: null,
+  printing: false,
+  printFeedback: null,
+  drawerFeedback: null,
+  copies: 1,
+  feedLines: 2,
+  template: {
+    headerSlogan: "¡Todo para consentir a tu mascota!",
+    fiscalInfo: "RFC: CRO123456",
+    footerLine1: "Gracias por su compra",
+    footerLine2: "Agenda tu cita de baño",
+    footerPhone: "998 117 5387",
+    returnPolicy: "Políticas de devolución",
+    showCustomerPoints: true,
+    showCashierName: true,
+    showSaleNotes: true,
+    showBranchAddress: true,
+    showBranchPhone: true,
+  },
+  templateFeedback: null,
+  savingTemplate: false,
+  printers: [{ name: "POS-80", displayName: "POS-80", isDefault: true }],
+  selectedPrinter: "POS-80",
+  handleSelectPrinter: vi.fn(),
+  printersLoading: false,
+  printersError: null,
+  viewMode: "venta",
+  setViewMode: vi.fn(),
+  isElectron: true,
+  refreshPrinters: vi.fn(),
+  handleWidthChange: vi.fn(),
+  handlePrintModeChange: vi.fn(),
+  handleCopiesChange: vi.fn(),
+  handleFeedLinesChange: vi.fn(),
+  handleTemplateChange: vi.fn(),
+  handleToggleChange: vi.fn(),
+  handleResetTemplate: vi.fn(),
+  handleSaveTemplate: vi.fn(),
+  handleTestPrint: vi.fn(),
+  handleOpenDrawer: vi.fn(),
+  previewData: {
+    headerSlogan: "¡Todo para consentir a tu mascota!",
+    fiscalInfo: "RFC: CRO123456",
+    footerLine1: "Gracias por su compra",
+  },
+};
 
-vi.mock("../../../../utils/ticketPrinter", () => ({ printTicket }));
+let currentHookData = { ...mockHookReturn };
+
+vi.mock("../../../../contexts/BranchContext", () => ({
+  useBranch: () => ({ branch: { id: 1, name: "Sucursal Cancún Centro" } }),
+}));
+
+vi.mock("../../../../contexts/AuthContext", () => ({
+  useAuth: () => ({ user: { username: "admin" } }),
+}));
+
+vi.mock("./hooks/useSettingsPrinters", () => ({
+  useSettingsPrinters: () => currentHookData,
+}));
 
 describe("SettingsPrinters", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    window.localStorage.clear();
+    currentHookData = { ...mockHookReturn };
   });
 
-  it("arranca con el ancho por defecto de 58 mm y modo automático", () => {
+  it("renderizado completo del layout a dos columnas con todas las tarjetas", () => {
+    render(<SettingsPrinters />);
+    expect(screen.getByText("Impresión y Tickets")).toBeTruthy();
+    expect(screen.getByText("Impresora física del sistema")).toBeTruthy();
+    expect(screen.getByText("Formato y preferencias")).toBeTruthy();
+    expect(screen.getByText("Plantilla comercial del ticket")).toBeTruthy();
+    expect(screen.getByText("Diagnóstico de hardware")).toBeTruthy();
+    expect(screen.getByText("Simulador Térmico en Vivo")).toBeTruthy();
+    expect(screen.getByText("Ticket de Venta")).toBeTruthy();
+    expect(screen.getByText("Corte de Caja")).toBeTruthy();
+  });
+
+  it("permite conmutar la vista entre ticket de venta y corte de caja en el simulador", () => {
+    render(<SettingsPrinters />);
+    const corteButton = screen.getByRole("button", { name: "Corte de Caja" });
+    fireEvent.click(corteButton);
+    expect(currentHookData.setViewMode).toHaveBeenCalledWith("corte");
+
+    const ventaButton = screen.getByRole("button", { name: "Ticket de Venta" });
+    fireEvent.click(ventaButton);
+    expect(currentHookData.setViewMode).toHaveBeenCalledWith("venta");
+  });
+
+  it("despacha las funciones de cambio de configuración al interactuar con los inputs", () => {
     render(<SettingsPrinters />);
 
-    expect(screen.getByLabelText("58 mm").checked).toBe(true);
-    expect(screen.getByLabelText("80 mm").checked).toBe(false);
-    expect(
-      screen.getByLabelText("Imprimir automáticamente después de cobrar")
-        .checked
-    ).toBe(true);
-  });
+    const radio80 = screen.getByDisplayValue("80");
+    fireEvent.click(radio80);
+    expect(currentHookData.handleWidthChange).toHaveBeenCalled();
 
-  it("persiste el ancho elegido y lo anuncia con role=status", async () => {
-    render(<SettingsPrinters />);
-
-    fireEvent.click(screen.getByLabelText("80 mm"));
-
-    const status = await screen.findByRole("status");
-    expect(status.textContent).toContain("80 mm");
-    expect(window.localStorage.getItem("settings_ticket_width_mm")).toBe("80");
-  });
-
-  it("imprime el ticket de prueba con el perfil de papel configurado", async () => {
-    printTicket.mockResolvedValue({
-      success: true,
-      message: "Ticket impreso correctamente.",
+    const testPrintBtn = screen.getByRole("button", {
+      name: "Imprimir ticket de prueba",
     });
+    fireEvent.click(testPrintBtn);
+    expect(currentHookData.handleTestPrint).toHaveBeenCalled();
 
-    render(<SettingsPrinters />);
+    const resetBtn = screen.getByRole("button", {
+      name: "Restablecer valores predeterminados",
+    });
+    fireEvent.click(resetBtn);
+    expect(currentHookData.handleResetTemplate).toHaveBeenCalled();
 
-    fireEvent.click(screen.getByLabelText("80 mm"));
-    fireEvent.click(
-      screen.getByRole("button", { name: "Imprimir ticket de prueba" })
-    );
-
-    await waitFor(() => expect(printTicket).toHaveBeenCalledTimes(1));
-
-    const [text, options] = printTicket.mock.calls[0];
-    expect(text).toContain("TICKET DE PRUEBA");
-    expect(text).toContain("80 mm");
-    expect(options).toEqual({ profile: "80mm" });
-
-    const statuses = await screen.findAllByRole("status");
-    expect(
-      statuses.some((node) =>
-        node.textContent.includes("Ticket impreso correctamente.")
-      )
-    ).toBe(true);
+    const openDrawerBtn = screen.getByRole("button", {
+      name: "Probar apertura del cajón",
+    });
+    fireEvent.click(openDrawerBtn);
+    expect(currentHookData.handleOpenDrawer).toHaveBeenCalled();
   });
 
-  it("anuncia con role=alert cuando la impresión falla", async () => {
-    printTicket.mockResolvedValue({
-      success: false,
-      message: "No hay ninguna impresora configurada en el sistema.",
-    });
+  it("muestra los mensajes de estado y error cuando hay feedback activo", () => {
+    currentHookData = {
+      ...mockHookReturn,
+      preferencesFeedback: {
+        type: "success",
+        message: "Ancho de ticket guardado: 80 mm.",
+      },
+      printFeedback: { type: "error", message: "Impresora desconectada." },
+    };
 
     render(<SettingsPrinters />);
-
-    fireEvent.click(
-      screen.getByRole("button", { name: "Imprimir ticket de prueba" })
+    expect(screen.getByRole("status").textContent).toContain(
+      "Ancho de ticket guardado: 80 mm."
     );
-
-    const alert = await screen.findByRole("alert");
-    expect(alert.textContent).toContain("No hay ninguna impresora configurada");
+    expect(screen.getByRole("alert").textContent).toContain(
+      "Impresora desconectada."
+    );
   });
 });

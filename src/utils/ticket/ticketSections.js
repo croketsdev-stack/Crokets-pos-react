@@ -23,7 +23,19 @@ import { getRewardVisualTypeForItem } from "./ticketRewardService";
 import { formatBranchAddressLines } from "./ticketBranchFormatters";
 import { getReturnPointsFromReturn } from "./ticketPointsService";
 
-export const buildHeaderSection = (branch = {}) => {
+const pushCustomHeaderLines = (lines, text = "", width = TICKET_WIDTH) => {
+  const trimmed = String(text).trim();
+  if (!trimmed) return;
+
+  wrapText(trimmed, width).forEach((line) => {
+    const content = line.trim();
+    if (content) {
+      lines.push(centerText(content, width));
+    }
+  });
+};
+
+export const buildHeaderSection = (branch = {}, customization = null) => {
   const lines = [];
 
   const branchName = branch.name || "SUCURSAL";
@@ -31,14 +43,22 @@ export const buildHeaderSection = (branch = {}) => {
 
   lines.push(strongSeparator());
   lines.push(centerText("CROKETS"));
+
+  if (customization) {
+    pushCustomHeaderLines(lines, customization.headerSlogan);
+    pushCustomHeaderLines(lines, customization.fiscalInfo);
+  }
+
   lines.push(centerText(branchName.toUpperCase()));
 
-  const branchAddressLines = formatBranchAddressLines(branch);
-  branchAddressLines.forEach((line) => {
-    lines.push(centerText(line));
-  });
+  if (customization?.showBranchAddress !== false) {
+    const branchAddressLines = formatBranchAddressLines(branch);
+    branchAddressLines.forEach((line) => {
+      lines.push(centerText(line));
+    });
+  }
 
-  if (branchPhone) {
+  if (customization?.showBranchPhone !== false && branchPhone) {
     lines.push(centerText(`Tel. ${branchPhone}`));
   }
 
@@ -54,15 +74,20 @@ export const buildSaleInfoSection = ({
   isRewardOnlySale = false,
   hasRewards = false,
   isCancelled = false,
+  showCashierName = true,
 }) => {
   const lines = [];
 
   lines.push(strongSeparator());
   lines.push(`Fecha: ${formatDate(saleDate)}`);
   lines.push(`Hora : ${formatTime(saleDate)}`);
-  lines.push(
-    `Cajero: ${(cashierName || sale.cashier_name || "").toUpperCase()}`
-  );
+
+  if (showCashierName !== false) {
+    lines.push(
+      `Cajero: ${(cashierName || sale.cashier_name || "").toUpperCase()}`
+    );
+  }
+
   lines.push(`Folio : ${sale.folio || "-"}`);
 
   if (customerName) {
@@ -319,10 +344,12 @@ export const buildCustomerPointsSection = ({
   hasPartialReturns = false,
   isCancelled = false,
   netPoints = 0,
+  showCustomerPoints = true,
 }) => {
   const lines = [];
 
   if (
+    showCustomerPoints !== false &&
     customerName &&
     (earnedPoints > 0 ||
       returnedPoints > 0 ||
@@ -608,8 +635,12 @@ export const buildReprintSection = (isReprint = false, reprintedAt = null) => {
   return lines;
 };
 
-export const buildNotesSection = (sale = {}) => {
+export const buildNotesSection = (sale = {}, { showNotes = true } = {}) => {
   const lines = [];
+
+  if (!showNotes) {
+    return lines;
+  }
 
   const saleNotes = String(sale.notes || "").trim();
 

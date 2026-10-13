@@ -18,6 +18,7 @@ const IPC_CHANNELS = [
   "get-zoom-debug",
   "print-ticket",
   "open-cash-drawer",
+  "get-printers",
 ];
 
 const originalPlatform = process.platform;
@@ -440,7 +441,7 @@ describe("electron mainProcess", () => {
         );
         expect(
           decodeURIComponent(printWindow.loadURL.mock.calls[0][0])
-        ).toContain("<pre>TICKET DE PRUEBA</pre>");
+        ).toContain("<pre>TICKET DE PRUEBA\n\n</pre>");
         expect(printWindow.webContents.print).toHaveBeenCalledWith(
           expect.objectContaining({
             silent: true,
@@ -559,6 +560,20 @@ describe("electron mainProcess", () => {
           success: false,
           error: "NO_PRINTER_AVAILABLE",
         });
+      });
+    });
+
+    describe("get-printers", () => {
+      it("devuelve la lista de impresoras conectadas invocando listPrinters", async () => {
+        const { handlers } = buildIpcHarness();
+        const mockPrinters = [{ name: "Epson TM-T20", isDefault: true }];
+        const sender = createWebContents({
+          getPrintersAsync: vi.fn(() => Promise.resolve(mockPrinters)),
+        });
+
+        await expect(handlers["get-printers"]({ sender })).resolves.toEqual(
+          mockPrinters
+        );
       });
     });
   });

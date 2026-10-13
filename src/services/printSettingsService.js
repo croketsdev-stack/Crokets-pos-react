@@ -98,3 +98,43 @@ export const savePrintMode = (value) => {
 
   return { success: true, printMode, error: null };
 };
+
+const SELECTED_PRINTER_KEY = "settings_selected_printer";
+const TICKET_COPIES_KEY = "settings_ticket_copies";
+const TICKET_FEED_LINES_KEY = "settings_ticket_feed_lines";
+
+/**
+ * Normaliza un entero positivo hacia el rango [min, max]. Un valor válido por
+ * debajo de `min` (incluidas fracciones < 1 que truncarían a 0) cae al
+ * `fallback`, de modo que `saveTicketCopies(0.5)` persiste 1 y
+ * `saveTicketFeedLines(0.5)` persiste 2 en lugar de un 0 fuera de rango.
+ */
+const clampInteger = (value, { fallback, min = 1, max = 5 }) => {
+  const parsed = Number(value);
+  const truncated = Number.isFinite(parsed) ? Math.trunc(parsed) : fallback;
+  return Math.max(min, Math.min(max, truncated >= min ? truncated : fallback));
+};
+
+export const getSelectedPrinter = () =>
+  readStoredValue(SELECTED_PRINTER_KEY) || "";
+
+export const saveSelectedPrinter = (value = "") =>
+  writeStoredValue(SELECTED_PRINTER_KEY, String(value || ""));
+
+export const getTicketCopies = () =>
+  clampInteger(readStoredValue(TICKET_COPIES_KEY), { fallback: 1 });
+
+export const saveTicketCopies = (value = 1) => {
+  const copies = clampInteger(value, { fallback: 1 });
+  const ok = writeStoredValue(TICKET_COPIES_KEY, String(copies));
+  return { success: ok, copies: ok ? copies : getTicketCopies() };
+};
+
+export const getTicketFeedLines = () =>
+  clampInteger(readStoredValue(TICKET_FEED_LINES_KEY), { fallback: 2 });
+
+export const saveTicketFeedLines = (value = 2) => {
+  const feedLines = clampInteger(value, { fallback: 2 });
+  const ok = writeStoredValue(TICKET_FEED_LINES_KEY, String(feedLines));
+  return { success: ok, feedLines: ok ? feedLines : getTicketFeedLines() };
+};
