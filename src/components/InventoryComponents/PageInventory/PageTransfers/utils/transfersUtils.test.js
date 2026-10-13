@@ -10,6 +10,11 @@ import {
   buildTransferTotals,
   filterTransferProducts,
   getTransferMetaSeparator,
+  getPendingReceiptsCount,
+  getPendingReceiptOrders,
+  getTransfersHistory,
+  getTransferMetrics,
+  sortTransfersByDate,
 } from "./transfersUtils";
 
 const snapshotFields = [
@@ -431,6 +436,171 @@ describe("transfersUtils", () => {
       });
       expect(byDesc).toHaveLength(1);
       expect(byDesc[0].id).toBe("1");
+    });
+  });
+
+  describe("sortTransfersByDate", () => {
+    it("ordena de mas reciente a mas antiguo por createdAt", () => {
+      const orders = [
+        { id: "1", createdAt: "2026-01-01T00:00:00Z" },
+        { id: "3", createdAt: "2026-03-01T00:00:00Z" },
+        { id: "2", createdAt: "2026-02-01T00:00:00Z" },
+      ];
+      const sorted = sortTransfersByDate(orders);
+      expect(sorted.map((o) => o.id)).toEqual(["3", "2", "1"]);
+    });
+
+    it("no muta el arreglo original", () => {
+      const orders = [
+        { id: "1", createdAt: "2026-01-01T00:00:00Z" },
+        { id: "2", createdAt: "2026-02-01T00:00:00Z" },
+      ];
+      const originalIds = orders.map((o) => o.id);
+      sortTransfersByDate(orders);
+      expect(orders.map((o) => o.id)).toEqual(originalIds);
+    });
+
+    it("maneja entradas no array devuelve arreglo vacio", () => {
+      expect(sortTransfersByDate(null)).toEqual([]);
+      expect(sortTransfersByDate(undefined)).toEqual([]);
+    });
+  });
+
+  describe("getPendingReceiptsCount", () => {
+    const orders = [
+      { id: "1", destinationBranchId: "b1", status: "pending_receipt" },
+      { id: "2", destinationBranchId: "b1", status: "received_complete" },
+      { id: "3", destinationBranchId: "b2", status: "pending_receipt" },
+      { id: "4", originBranchId: "b1", status: "pending_receipt" },
+    ];
+
+    it("cuenta solo ordenes pending_receipt de la sucursal destino", () => {
+      expect(
+        getPendingReceiptsCount({ orders, currentBranchId: "b1" })
+      ).toBe(1);
+    });
+
+    it("devuelve 0 si no hay pendientes para la sucursal", () => {
+      expect(
+        getPendingReceiptsCount({ orders, currentBranchId: "b3" })
+      ).toBe(0);
+    });
+
+    it("devuelve 0 con orders vacio", () => {
+      expect(getPendingReceiptsCount({ orders: [], currentBranchId: "b1" })).toBe(0);
+    });
+  });
+
+  describe("getPendingReceiptOrders", () => {
+    const orders = [
+      {
+        id: "1",
+        destinationBranchId: "b1",
+        status: "pending_receipt",
+        createdAt: "2026-01-01T00:00:00Z",
+      },
+      {
+        id: "2",
+        destinationBranchId: "b1",
+        status: "received_complete",
+        createdAt: "2026-02-01T00:00:00Z",
+      },
+      {
+        id: "3",
+        destinationBranchId: "b1",
+        status: "pending_receipt",
+        createdAt: "2026-03-01T00:00:00Z",
+      },
+    ];
+
+    it("devuelve solo pending_receipt de la sucursal destino ordenadas por fecha descendente", () => {
+      const result = getPendingReceiptOrders({
+        orders,
+        currentBranchId: "b1",
+      });
+      expect(result.map((o) => o.id)).toEqual(["3", "1"]);
+    });
+
+    it("devuelve arreglo vacio si no hay pendientes", () => {
+      expect(
+        getPendingReceiptOrders({ orders, currentBranchId: "b2" })
+      ).toEqual([]);
+    });
+  });
+
+  describe("getTransfersHistory", () => {
+    const orders = [
+      { id: "1", originBranchId: "b1", destinationBranchId: "b2", status: "pending_receipt", createdAt: "2026-01-01T00:00:00Z" },
+      { id: "2", originBranchId: "b2", destinationBranchId: "b3", status: "received_complete", createdAt: "2026-02-01T00:00:00Z" },
+      { id: "3", originBranchId: "b3", destinationBranchId: "b4", status: "pending_receipt", createdAt: "2026-03-01T00:00:00Z" },
+    ];
+
+    it("devuelve ordenes donde la sucursal es origen o destino, ordenadas por fecha", () => {
+      const result = getTransfersHistory({
+        orders,
+        currentBranchId: "b2",
+      });
+      expect(result.map((o) => o.id)).toEqual(["2", "1"]);
+    });
+
+    it("devuelve arreglo vacio si la sucursal no participa", () => {
+      expect(
+        getTransfersHistory({ orders, currentBranchId: "b5" })
+      ).toEqual([]);
+    });
+  });
+
+  describe("getTransferMetrics", () => {
+    const orders = [
+      { id: "1", originBranchId: "b1", destinationBranchId: "b2", status: "pending_receipt", totals: { requestedUnits: 10, receivedUnits: 0, returnedUnits: 0 } },
+      { id: "2", originBranchId: "b2", destinationBranchId: "b1", status: "pending_receipt", totals: { requestedUnits: 5, receivedUnits: 0, returnedUnits: 0 } },
+      { id: "3", originBranchId: "b1", destinationBranchId: "b3", status: "received_complete", totals: { requestedUnits: 0, receivedUnits: 0, returnedUnits: 0 } },
+      { id: "4", originBranchId: "b1", destinationBranchId: "b4", status: "cancelled", totals: { requestedUnits: 0, receivedUnits: 0, returnedUnits: 0 } },
+      { id: "5", originBranchId: "b5", destinationBranchId: "b1", status: "received_complete", totals: { requestedUnits: 0, receivedUnits: 0, returnedUnits: 0 } },
+    ];
+
+    it("calcula metricas correctas para la sucursal origen", () => {
+      const metrics = getTransferMetrics({
+        orders,
+        currentBranchId: "b1",
+      });
+      // enviados: b1 es origen en id1, id3, id4 = 3
+      // pendingReceipts: destino b1 y pending = 1 (id 2)
+      // completedReceipts: destino b1 y no pending = 1 (id 5)
+      // cancelled: participa y cancelled = 1 (id 4)
+      // unitsInTransit: participa y pending: id1 (10) + id2 (5) = 15
+      expect(metrics).toEqual({
+        sent: 3,
+        pendingReceipts: 1,
+        completedReceipts: 1,
+        cancelled: 1,
+        unitsInTransit: 15,
+      });
+    });
+
+    it("devuelve ceros si la sucursal no participa", () => {
+      const metrics = getTransferMetrics({
+        orders,
+        currentBranchId: "b99",
+      });
+      expect(metrics).toEqual({
+        sent: 0,
+        pendingReceipts: 0,
+        completedReceipts: 0,
+        cancelled: 0,
+        unitsInTransit: 0,
+      });
+    });
+
+    it("no cuenta unitsInTransit si remaining <= 0", () => {
+      const localOrders = [
+        { id: "1", originBranchId: "b1", destinationBranchId: "b2", status: "pending_receipt", totals: { requestedUnits: 10, receivedUnits: 10, returnedUnits: 0 } },
+      ];
+      const metrics = getTransferMetrics({
+        orders: localOrders,
+        currentBranchId: "b1",
+      });
+      expect(metrics.unitsInTransit).toBe(0);
     });
   });
 });

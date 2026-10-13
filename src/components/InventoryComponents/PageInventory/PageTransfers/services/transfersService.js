@@ -1,6 +1,9 @@
 import { supabase } from "../../../../../lib/supabaseClient";
 
-import { createTransferFolio } from "../utils/transfersUtils";
+import {
+  createTransferFolio,
+  normalizeTransferOrder,
+} from "../utils/transfersUtils";
 import {
   getBranchFallback,
   validateTransferItems,
@@ -50,9 +53,7 @@ export const loadTransferOrders = async () => {
     throw error;
   }
 
-  return (Array.isArray(data) ? data : []).map((order) =>
-    normalizeTransferOrderFromDetail(order)
-  );
+  return (Array.isArray(data) ? data : []).map(normalizeTransferOrder);
 };
 
 export const createTransferOrder = async ({
