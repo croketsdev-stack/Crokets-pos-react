@@ -1,4 +1,5 @@
 import displayIcon from "../../../../../assets/icons/display-solid-full.svg";
+import warningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
 import styles from "../SettingsTerminal.module.css";
 import { formatResolution, formatDpr } from "../utils/terminalFormatters";
 
@@ -7,6 +8,7 @@ const DisplaySettingsCard = ({
   zoomChips,
   zoomFeedback,
   fullscreen,
+  fullscreenFeedback,
   screenInfo,
   onZoomChange,
   onZoomSet,
@@ -145,6 +147,20 @@ const DisplaySettingsCard = ({
             : "Activar pantalla completa"}
         </button>
       </div>
+
+      {fullscreenFeedback?.type === "error" && (
+        <div role="alert" className={styles.feedbackAlert}>
+          <img
+            src={warningIcon}
+            alt=""
+            aria-hidden="true"
+            className={styles.feedbackAlertIcon}
+          />
+          <p className={styles.feedbackAlertText}>
+            {fullscreenFeedback.message}
+          </p>
+        </div>
+      )}
     </article>
   );
 };

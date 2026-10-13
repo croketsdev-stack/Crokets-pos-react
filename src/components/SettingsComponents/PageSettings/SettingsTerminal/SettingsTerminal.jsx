@@ -29,6 +29,7 @@ const SettingsTerminal = () => {
     copyFeedback,
     isAdmin,
     fullscreen,
+    fullscreenFeedback,
     localStorageSize,
     screenInfo,
     zoomChips,
@@ -126,6 +127,7 @@ const SettingsTerminal = () => {
           zoomChips={zoomChips}
           zoomFeedback={zoomFeedback}
           fullscreen={fullscreen}
+          fullscreenFeedback={fullscreenFeedback}
           screenInfo={screenInfo}
           hasElectronBridge={hasElectronBridge}
           onZoomChange={handleZoomChange}

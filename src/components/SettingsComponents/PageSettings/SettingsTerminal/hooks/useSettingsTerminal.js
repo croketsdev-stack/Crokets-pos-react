@@ -43,6 +43,7 @@ export const useSettingsTerminal = (branch) => {
   const [fullscreen, setFullscreen] = useState(() =>
     typeof document !== "undefined" ? !!document.fullscreenElement : false
   );
+  const [fullscreenFeedback, setFullscreenFeedback] = useState(null);
   const [localStorageSize, setLocalStorageSize] = useState(getLocalStorageSize);
   const [screenInfo, setScreenInfo] = useState({
     width: typeof window !== "undefined" ? window.screen?.width : null,
@@ -56,6 +57,7 @@ export const useSettingsTerminal = (branch) => {
   const clearFeedbacks = useCallback(() => {
     setZoomFeedback(null);
     setCopyFeedback(null);
+    setFullscreenFeedback(null);
   }, []);
 
   useEffect(() => {
@@ -249,6 +251,7 @@ export const useSettingsTerminal = (branch) => {
   }, [device.code, clearFeedbacks]);
 
   const handleToggleFullscreen = useCallback(async () => {
+    setFullscreenFeedback(null);
     try {
       if (hasElectronBridge()) {
         const result = await window.electronAPI.invoke("toggle-fullscreen");
@@ -269,9 +272,10 @@ export const useSettingsTerminal = (branch) => {
       }
     } catch (error) {
       console.error("Error al cambiar modo pantalla completa:", error);
-      setZoomFeedback({
+      setFullscreenFeedback({
         type: "error",
-        message: "Error al cambiar modo pantalla completa",
+        message:
+          "No se pudo cambiar el modo de pantalla completa. Si la aplicación se actualizó recientemente, reinicie la ventana de escritorio.",
       });
     }
   }, []);
@@ -318,6 +322,7 @@ export const useSettingsTerminal = (branch) => {
     copyFeedback,
     isAdmin,
     fullscreen,
+    fullscreenFeedback,
     localStorageSize,
     screenInfo,
     zoomChips: ZOOM_STEPS,
