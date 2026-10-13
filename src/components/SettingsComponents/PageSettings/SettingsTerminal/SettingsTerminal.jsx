@@ -8,7 +8,6 @@ import BranchEditModal from "./components/BranchEditModal";
 import TerminalDeviceCard from "./components/TerminalDeviceCard";
 import ConnectivityStatusCard from "./components/ConnectivityStatusCard";
 import DisplaySettingsCard from "./components/DisplaySettingsCard";
-import TerminalMaintenanceCard from "./components/TerminalMaintenanceCard";
 
 const SettingsTerminal = () => {
   const { branch, setBranch } = useBranch();
@@ -30,7 +29,6 @@ const SettingsTerminal = () => {
     isAdmin,
     fullscreen,
     fullscreenFeedback,
-    localStorageSize,
     screenInfo,
     zoomChips,
     hasElectronBridge,
@@ -40,9 +38,6 @@ const SettingsTerminal = () => {
     handleRunDiagnostics,
     handleCopyDeviceCode,
     handleToggleFullscreen,
-    handleClearLocalStorage,
-    handleReload,
-    handleCloseApp,
     refreshBranchProfile,
     clearFeedbacks,
   } = useSettingsTerminal(branch);
@@ -134,13 +129,6 @@ const SettingsTerminal = () => {
           onZoomSet={handleZoomSet}
           onZoomReset={handleZoomReset}
           onToggleFullscreen={handleToggleFullscreen}
-        />
-        <TerminalMaintenanceCard
-          localStorageSize={localStorageSize}
-          hasElectronBridge={hasElectronBridge}
-          onClearLocalStorage={handleClearLocalStorage}
-          onReload={handleReload}
-          onCloseApp={handleCloseApp}
         />
       </div>
 

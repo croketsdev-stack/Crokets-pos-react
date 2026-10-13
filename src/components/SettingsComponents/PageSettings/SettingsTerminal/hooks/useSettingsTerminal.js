@@ -11,12 +11,7 @@ import {
   checkOnlineStatus,
 } from "../services/terminalDiagnosticsService";
 import { fetchBranchProfile } from "../services/branchProfileService";
-import {
-  ZOOM_STEPS,
-  findNextZoomStep,
-  isProtectedStorageKey,
-  getLocalStorageSize,
-} from "../utils/terminalHelpers";
+import { ZOOM_STEPS, findNextZoomStep } from "../utils/terminalHelpers";
 import { useAuth } from "../../../../../contexts/AuthContext";
 import { checkUserIsAdmin } from "../../../../../lib/permissionsService";
 
@@ -44,7 +39,6 @@ export const useSettingsTerminal = (branch) => {
     typeof document !== "undefined" ? !!document.fullscreenElement : false
   );
   const [fullscreenFeedback, setFullscreenFeedback] = useState(null);
-  const [localStorageSize, setLocalStorageSize] = useState(getLocalStorageSize);
   const [screenInfo, setScreenInfo] = useState({
     width: typeof window !== "undefined" ? window.screen?.width : null,
     height: typeof window !== "undefined" ? window.screen?.height : null,
@@ -280,35 +274,6 @@ export const useSettingsTerminal = (branch) => {
     }
   }, []);
 
-  const handleClearLocalStorage = useCallback(() => {
-    if (typeof window === "undefined" || !window.localStorage) return;
-    const keysToRemove = [];
-    for (let i = 0; i < window.localStorage.length; i++) {
-      const key = window.localStorage.key(i);
-      if (key && !isProtectedStorageKey(key)) {
-        keysToRemove.push(key);
-      }
-    }
-    keysToRemove.forEach((key) => window.localStorage.removeItem(key));
-    setLocalStorageSize(getLocalStorageSize());
-  }, []);
-
-  const handleReload = useCallback(() => {
-    if (typeof window !== "undefined") {
-      window.location.reload();
-    }
-  }, []);
-
-  const handleCloseApp = useCallback(async () => {
-    if (hasElectronBridge()) {
-      try {
-        await window.electronAPI.invoke("close-app");
-      } catch (error) {
-        console.error("Error cerrando aplicación:", error);
-      }
-    }
-  }, []);
-
   return {
     device,
     connection,
@@ -323,7 +288,6 @@ export const useSettingsTerminal = (branch) => {
     isAdmin,
     fullscreen,
     fullscreenFeedback,
-    localStorageSize,
     screenInfo,
     zoomChips: ZOOM_STEPS,
     hasElectronBridge: hasElectronBridge(),
@@ -333,9 +297,6 @@ export const useSettingsTerminal = (branch) => {
     handleRunDiagnostics,
     handleCopyDeviceCode,
     handleToggleFullscreen,
-    handleClearLocalStorage,
-    handleReload,
-    handleCloseApp,
     refreshBranchProfile,
     clearFeedbacks,
   };
