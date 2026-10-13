@@ -1,17 +1,19 @@
 import styles from "../SettingsPrinters.module.css";
-import { DEFAULT_TICKET_CUSTOMIZATION } from "../services/ticketCustomizationService";
 
 const TicketContentCard = ({
   template = {},
   handleTemplateChange,
   handleToggleChange,
+  handleResetTemplate,
   handleSaveTemplate,
   savingTemplate = false,
   templateFeedback,
 }) => (
   <article className={styles.card}>
     <h2 className={styles.cardTitle}>Plantilla comercial del ticket</h2>
-    <p className={styles.cardDescription}>Personaliza encabezado, pie de página y políticas. Se guarda por sucursal.</p>
+    <p className={styles.cardDescription}>
+      Personaliza encabezado, pie de página y políticas. Se guarda por sucursal.
+    </p>
 
     <div className={styles.formGrid}>
       <div>
@@ -96,16 +98,22 @@ const TicketContentCard = ({
             type="checkbox"
             className={styles.checkboxInput}
             checked={Boolean(template.showCustomerPoints)}
-            onChange={(e) => handleToggleChange("showCustomerPoints", e.target.checked)}
+            onChange={(e) =>
+              handleToggleChange("showCustomerPoints", e.target.checked)
+            }
           />
-          <span className={styles.checkboxLabel}>Mostrar puntos de cliente</span>
+          <span className={styles.checkboxLabel}>
+            Mostrar puntos de cliente
+          </span>
         </label>
         <label className={styles.checkboxCard}>
           <input
             type="checkbox"
             className={styles.checkboxInput}
             checked={Boolean(template.showCashierName)}
-            onChange={(e) => handleToggleChange("showCashierName", e.target.checked)}
+            onChange={(e) =>
+              handleToggleChange("showCashierName", e.target.checked)
+            }
           />
           <span className={styles.checkboxLabel}>Mostrar nombre de cajero</span>
         </label>
@@ -114,7 +122,9 @@ const TicketContentCard = ({
             type="checkbox"
             className={styles.checkboxInput}
             checked={Boolean(template.showSaleNotes)}
-            onChange={(e) => handleToggleChange("showSaleNotes", e.target.checked)}
+            onChange={(e) =>
+              handleToggleChange("showSaleNotes", e.target.checked)
+            }
           />
           <span className={styles.checkboxLabel}>Mostrar notas de venta</span>
         </label>
@@ -123,27 +133,44 @@ const TicketContentCard = ({
             type="checkbox"
             className={styles.checkboxInput}
             checked={Boolean(template.showBranchAddress)}
-            onChange={(e) => handleToggleChange("showBranchAddress", e.target.checked)}
+            onChange={(e) =>
+              handleToggleChange("showBranchAddress", e.target.checked)
+            }
           />
-          <span className={styles.checkboxLabel}>Mostrar dirección de sucursal</span>
+          <span className={styles.checkboxLabel}>
+            Mostrar dirección de sucursal
+          </span>
         </label>
         <label className={styles.checkboxCard}>
           <input
             type="checkbox"
             className={styles.checkboxInput}
             checked={Boolean(template.showBranchPhone)}
-            onChange={(e) => handleToggleChange("showBranchPhone", e.target.checked)}
+            onChange={(e) =>
+              handleToggleChange("showBranchPhone", e.target.checked)
+            }
           />
-          <span className={styles.checkboxLabel}>Mostrar teléfono de sucursal</span>
+          <span className={styles.checkboxLabel}>
+            Mostrar teléfono de sucursal
+          </span>
         </label>
       </div>
     </fieldset>
 
     <div className={styles.buttonRow}>
-      <button type="button" className={styles.buttonSecondary} onClick={() => { Object.entries(DEFAULT_TICKET_CUSTOMIZATION).forEach(([k,v]) => handleTemplateChange && handleTemplateChange(k,v)); }}>
+      <button
+        type="button"
+        className={styles.buttonSecondary}
+        onClick={handleResetTemplate}
+      >
         Restablecer valores predeterminados
       </button>
-      <button type="button" className={styles.buttonPrimary} onClick={handleSaveTemplate} disabled={savingTemplate}>
+      <button
+        type="button"
+        className={styles.buttonPrimary}
+        onClick={handleSaveTemplate}
+        disabled={savingTemplate}
+      >
         {savingTemplate ? "Guardando..." : "Guardar plantilla de sucursal"}
       </button>
     </div>

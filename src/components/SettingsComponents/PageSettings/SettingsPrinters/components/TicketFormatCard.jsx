@@ -15,13 +15,18 @@ const TicketFormatCard = ({
 }) => (
   <article className={styles.card}>
     <h2 className={styles.cardTitle}>Formato y preferencias</h2>
-    <p className={styles.cardDescription}>Configura el ancho, copias, modo de impresión y saltos de línea.</p>
+    <p className={styles.cardDescription}>
+      Configura el ancho, copias, modo de impresión y saltos de línea.
+    </p>
 
     <fieldset className={styles.fieldset}>
       <legend className={styles.legend}>Ancho del ticket</legend>
       <div className={styles.radioCards}>
         {TICKET_WIDTH_OPTIONS.map((option) => (
-          <label key={option} className={`${styles.radioCard} ${widthMm === option ? styles.radioCardActive : ""}`}>
+          <label
+            key={option}
+            className={`${styles.radioCard} ${widthMm === option ? styles.radioCardActive : ""}`}
+          >
             <input
               type="radio"
               name="ticket-width"
@@ -32,7 +37,9 @@ const TicketFormatCard = ({
             />
             <div className={styles.radioCardContent}>
               <div className={styles.radioCardTitle}>{option} mm</div>
-              <div className={styles.radioCardDesc}>{option === 58 ? "Estándar térmico" : "Rollo ancho"}</div>
+              <div className={styles.radioCardDesc}>
+                {option === 58 ? "Estándar térmico" : "Rollo ancho"}
+              </div>
             </div>
           </label>
         ))}
@@ -42,7 +49,9 @@ const TicketFormatCard = ({
     <fieldset className={styles.fieldset}>
       <legend className={styles.legend}>Modo de impresión post-cobro</legend>
       <div className={styles.radioCards}>
-        <label className={`${styles.radioCard} ${printMode === "auto" ? styles.radioCardActive : ""}`}>
+        <label
+          className={`${styles.radioCard} ${printMode === "auto" ? styles.radioCardActive : ""}`}
+        >
           <input
             type="radio"
             name="print-mode"
@@ -56,7 +65,9 @@ const TicketFormatCard = ({
             <div className={styles.radioCardDesc}>Imprime al cobrar</div>
           </div>
         </label>
-        <label className={`${styles.radioCard} ${printMode === "confirm" ? styles.radioCardActive : ""}`}>
+        <label
+          className={`${styles.radioCard} ${printMode === "confirm" ? styles.radioCardActive : ""}`}
+        >
           <input
             type="radio"
             name="print-mode"
@@ -78,7 +89,9 @@ const TicketFormatCard = ({
         <label htmlFor="copies-input" className={styles.label}>
           Copias por venta
         </label>
-        <p className={styles.fieldHint}>Número de copias a imprimir por venta</p>
+        <p className={styles.fieldHint}>
+          Número de copias a imprimir por venta
+        </p>
         <input
           id="copies-input"
           type="number"

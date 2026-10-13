@@ -1,5 +1,6 @@
 import styles from "../SettingsPrinters.module.css";
-
+import printIcon from "../../../../../assets/icons/print-solid-full.svg";
+import moneyIcon from "../../../../../assets/icons/money-bill-wave-solid-full.svg";
 
 const TicketDiagnosticCard = ({
   widthMm = 58,
@@ -15,11 +16,20 @@ const TicketDiagnosticCard = ({
 
     <div className={styles.diagnosticBlock}>
       <div className={styles.diagnosticHeader}>
-        
+        <img
+          src={printIcon}
+          alt=""
+          className={styles.diagnosticIcon}
+          aria-hidden="true"
+        />
         <div>
-          <h3 className={styles.diagnosticTitle}>Prueba de Impresión Térmica</h3>
+          <h3 className={styles.diagnosticTitle}>
+            Prueba de Impresión Térmica
+          </h3>
           <p className={styles.diagnosticDesc}>
-            Envía un ticket completo a la impresora configurada con el ancho seleccionado ({widthMm} mm). Permite verificar la nitidez del cabezal térmico, la alineación de columnas y el corte de papel.
+            Envía un ticket completo a la impresora configurada con el ancho
+            seleccionado ({widthMm} mm). Permite verificar la nitidez del
+            cabezal térmico, la alineación de columnas y el corte de papel.
           </p>
         </div>
       </div>
@@ -47,11 +57,20 @@ const TicketDiagnosticCard = ({
 
     <div className={styles.diagnosticBlock}>
       <div className={styles.diagnosticHeader}>
-        
+        <img
+          src={moneyIcon}
+          alt=""
+          className={styles.diagnosticIcon}
+          aria-hidden="true"
+        />
         <div>
-          <h3 className={styles.diagnosticTitle}>Apertura de Cajón Registrador (Drawer Kick)</h3>
+          <h3 className={styles.diagnosticTitle}>
+            Apertura de Cajón Registrador (Drawer Kick)
+          </h3>
           <p className={styles.diagnosticDesc}>
-            Envía el pulso eléctrico a través del puerto RJ11 de la impresora térmica para abrir la gaveta de efectivo. Permite validar la conexión del cable RJ11 para el cobro en efectivo.
+            Envía el pulso eléctrico a través del puerto RJ11 de la impresora
+            térmica para abrir la gaveta de efectivo. Permite validar la
+            conexión del cable RJ11 para el cobro en efectivo.
           </p>
         </div>
       </div>

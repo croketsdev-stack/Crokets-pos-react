@@ -40,6 +40,7 @@ const SettingsPrinters = () => {
     handleFeedLinesChange,
     handleTemplateChange,
     handleToggleChange,
+    handleResetTemplate,
     handleSaveTemplate,
     handleTestPrint,
     handleOpenDrawer,
@@ -85,6 +86,7 @@ const SettingsPrinters = () => {
             template={template}
             handleTemplateChange={handleTemplateChange}
             handleToggleChange={handleToggleChange}
+            handleResetTemplate={handleResetTemplate}
             handleSaveTemplate={handleSaveTemplate}
             savingTemplate={savingTemplate}
             templateFeedback={templateFeedback}

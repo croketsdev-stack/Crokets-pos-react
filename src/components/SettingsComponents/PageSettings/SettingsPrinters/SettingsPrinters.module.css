@@ -342,14 +342,15 @@
   border: 1px solid #e5e7eb;
   border-radius: 0.375rem;
   padding: 1.25rem 1rem 2rem;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.08);
-  font-family: 'Courier New', Courier, monospace;
+  box-shadow:
+    0 10px 25px -5px rgba(0, 0, 0, 0.1),
+    0 8px 10px -6px rgba(0, 0, 0, 0.08);
+  font-family: "Courier New", Courier, monospace;
   margin: 0 auto;
   max-height: 70vh;
   overflow-y: auto;
   position: relative;
 }
-
 
 .preview58 {
   width: 32ch;
@@ -362,7 +363,7 @@
 }
 
 .ticketPre {
-  font-family: 'Courier New', Courier, monospace;
+  font-family: "Courier New", Courier, monospace;
   font-size: 0.75rem;
   line-height: 1.15;
   margin: 0;

@@ -1,11 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { printTicket, getAvailablePrinters, hasElectronBridge } from "../../../../../utils/ticketPrinter";
-const callOpenCashDrawer = async ({ printerDeviceName } = {}) => {
-  if (typeof window !== 'undefined' && typeof window.electronAPI?.invoke === 'function') {
-    return window.electronAPI.invoke('open-cash-drawer', { deviceName: printerDeviceName });
-  }
-  return { success: false, message: 'No disponible fuera de Electron' };
-};
+import {
+  printTicket,
+  getAvailablePrinters,
+  openCashDrawerBridge,
+  hasElectronBridge,
+} from "../../../../../utils/ticketPrinter";
 import {
   TICKET_WIDTH_OPTIONS,
   PRINT_MODE_AUTO,
@@ -21,7 +20,10 @@ import {
   getTicketCustomization,
   saveTicketCustomization,
 } from "../services/ticketCustomizationService";
-import { wrapText, centerText } from "../../../../../utils/ticket/ticketLayoutFormatters";
+import {
+  wrapText,
+  centerText,
+} from "../../../../../utils/ticket/ticketLayoutFormatters";
 
 export const TICKET_WIDTH_OPTIONS_LIST = TICKET_WIDTH_OPTIONS;
 
@@ -35,14 +37,17 @@ const DEFAULT_FEEDBACK = null;
 export const useSettingsPrinters = ({ branchId = null } = {}) => {
   const [widthMm, setWidthMm] = useState(() => getTicketWidthMm());
   const [printMode, setPrintMode] = useState(() => getPrintMode());
-  const [preferencesFeedback, setPreferencesFeedback] = useState(DEFAULT_FEEDBACK);
+  const [preferencesFeedback, setPreferencesFeedback] =
+    useState(DEFAULT_FEEDBACK);
   const [printing, setPrinting] = useState(false);
   const [printFeedback, setPrintFeedback] = useState(DEFAULT_FEEDBACK);
   const [drawerFeedback, setDrawerFeedback] = useState(DEFAULT_FEEDBACK);
 
   const [copies, setCopies] = useState(1);
   const [feedLines, setFeedLines] = useState(2);
-  const [template, setTemplate] = useState(() => ({ ...DEFAULT_TICKET_CUSTOMIZATION }));
+  const [template, setTemplate] = useState(() => ({
+    ...DEFAULT_TICKET_CUSTOMIZATION,
+  }));
   const [templateFeedback, setTemplateFeedback] = useState(DEFAULT_FEEDBACK);
   const [savingTemplate, setSavingTemplate] = useState(false);
 
@@ -56,56 +61,99 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
   const isElectron = hasElectronBridge();
 
   useEffect(() => {
+    let isMounted = true;
     const fetchTemplate = async () => {
       try {
         const result = await getTicketCustomization({ branchId });
-        setTemplate(result);
+        if (isMounted) {
+          setTemplate(result);
+        }
       } catch (error) {
         console.error("Error cargando plantilla de ticket:", error);
-        setTemplate({ ...DEFAULT_TICKET_CUSTOMIZATION });
+        if (isMounted) {
+          setTemplate({ ...DEFAULT_TICKET_CUSTOMIZATION });
+        }
       }
     };
     fetchTemplate();
+    return () => {
+      isMounted = false;
+    };
   }, [branchId]);
 
   const refreshPrinters = useCallback(async () => {
     setPrintersLoading(true);
     setPrintersError(null);
-    const result = await getAvailablePrinters();
-    setPrintersLoading(false);
-    if (!result.success) {
-      setPrintersError(result.error || "Error al obtener impresoras");
-      setPrinters(result.printers || []);
-      return;
-    }
-    setPrinters(result.printers || []);
-    if (result.printers?.length && !selectedPrinter) {
-      const defaultPrinter = result.printers.find((p) => p.isDefault) || result.printers[0];
-      setSelectedPrinter(defaultPrinter?.name || defaultPrinter?.deviceName || "");
-    }
-  }, [selectedPrinter]);
-
-  useEffect(() => {
-    if (isElectron) {
-      refreshPrinters();
-    }
-  }, [isElectron, refreshPrinters]);
-
-  const handleWidthChange = useCallback(
-    (event) => {
-      const result = saveTicketWidthMm(event.target.value);
+    try {
+      const result = await getAvailablePrinters();
+      setPrintersLoading(false);
       if (!result.success) {
-        setPreferencesFeedback({ type: "error", message: result.error });
+        setPrintersError(result.error || "Error al obtener impresoras");
+        setPrinters(result.printers || []);
         return;
       }
-      setWidthMm(result.widthMm);
-      setPreferencesFeedback({
-        type: "success",
-        message: `Ancho de ticket guardado: ${result.widthMm} mm.`,
+      setPrinters(result.printers || []);
+      setSelectedPrinter((prev) => {
+        if (prev) return prev;
+        const defaultPrinter =
+          result.printers?.find((p) => p.isDefault) || result.printers?.[0];
+        return defaultPrinter?.name || defaultPrinter?.deviceName || "";
       });
-    },
-    []
-  );
+    } catch (error) {
+      console.error("Error al refrescar impresoras:", error);
+      setPrintersLoading(false);
+      setPrintersError("Error al obtener impresoras");
+    }
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (isElectron) {
+      Promise.resolve().then(async () => {
+        if (!isMounted) return;
+        setPrintersLoading(true);
+        setPrintersError(null);
+        try {
+          const result = await getAvailablePrinters();
+          if (!isMounted) return;
+          setPrintersLoading(false);
+          if (!result.success) {
+            setPrintersError(result.error || "Error al obtener impresoras");
+            setPrinters(result.printers || []);
+            return;
+          }
+          setPrinters(result.printers || []);
+          setSelectedPrinter((prev) => {
+            if (prev) return prev;
+            const defaultPrinter =
+              result.printers?.find((p) => p.isDefault) || result.printers?.[0];
+            return defaultPrinter?.name || defaultPrinter?.deviceName || "";
+          });
+        } catch (error) {
+          console.error("Error cargando impresoras iniciales:", error);
+          if (!isMounted) return;
+          setPrintersLoading(false);
+          setPrintersError("Error al obtener impresoras");
+        }
+      });
+    }
+    return () => {
+      isMounted = false;
+    };
+  }, [isElectron]);
+
+  const handleWidthChange = useCallback((event) => {
+    const result = saveTicketWidthMm(event.target.value);
+    if (!result.success) {
+      setPreferencesFeedback({ type: "error", message: result.error });
+      return;
+    }
+    setWidthMm(result.widthMm);
+    setPreferencesFeedback({
+      type: "success",
+      message: `Ancho de ticket guardado: ${result.widthMm} mm.`,
+    });
+  }, []);
 
   const handlePrintModeChange = useCallback((event) => {
     const result = savePrintMode(event.target.value);
@@ -114,7 +162,10 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
       return;
     }
     setPrintMode(result.printMode);
-    setPreferencesFeedback({ type: "success", message: "Modo de impresión guardado." });
+    setPreferencesFeedback({
+      type: "success",
+      message: "Modo de impresión guardado.",
+    });
   }, []);
 
   const handleCopiesChange = useCallback((value) => {
@@ -141,10 +192,16 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
     try {
       const saved = await saveTicketCustomization({ branchId, template });
       setTemplate(saved);
-      setTemplateFeedback({ type: "success", message: "Plantilla guardada correctamente." });
+      setTemplateFeedback({
+        type: "success",
+        message: "Plantilla guardada correctamente.",
+      });
     } catch (error) {
       console.error("Error guardando plantilla:", error);
-      setTemplateFeedback({ type: "error", message: "No se pudo guardar la plantilla." });
+      setTemplateFeedback({
+        type: "error",
+        message: "No se pudo guardar la plantilla.",
+      });
     } finally {
       setSavingTemplate(false);
     }
@@ -196,17 +253,24 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
     setPrintFeedback({ type: "success", message: result.message });
   }, [buildTestTicketText, copies, selectedPrinter]);
 
+  const handleResetTemplate = useCallback(() => {
+    setTemplate({ ...DEFAULT_TICKET_CUSTOMIZATION });
+  }, []);
+
   const handleOpenDrawer = useCallback(async () => {
     setDrawerFeedback(DEFAULT_FEEDBACK);
     if (!isElectron) {
       setDrawerFeedback({
         type: "error",
-        message: "La apertura de cajón solo está disponible en la aplicación de escritorio.",
+        message:
+          "La apertura de cajón solo está disponible en la aplicación de escritorio.",
       });
       return;
     }
     try {
-      const result = await callOpenCashDrawer({ printerDeviceName: selectedPrinter });
+      const result = await openCashDrawerBridge({
+        printerDeviceName: selectedPrinter,
+      });
       if (!result.success) {
         setDrawerFeedback({
           type: "error",
@@ -233,8 +297,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
     }
   }, [templateFeedback]);
 
-
-    const previewData = useMemo(
+  const previewData = useMemo(
     () => ({
       headerSlogan: template.headerSlogan,
       fiscalInfo: template.fiscalInfo,
@@ -281,6 +344,7 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
     handleFeedLinesChange,
     handleTemplateChange,
     handleToggleChange,
+    handleResetTemplate,
     handleSaveTemplate,
     handleTestPrint,
     handleOpenDrawer,

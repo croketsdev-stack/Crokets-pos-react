@@ -1,6 +1,7 @@
-import shared from "../../PageSettings.module.css";
 import styles from "../SettingsPrinters.module.css";
-
+import rotateIcon from "../../../../../assets/icons/rotate-solid-full.svg";
+import infoIcon from "../../../../../assets/icons/circle-info-solid-full.svg";
+import warningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
 
 const PrinterDeviceCard = ({
   printers = [],
@@ -20,13 +21,16 @@ const PrinterDeviceCard = ({
     return msg;
   };
   const friendlyError = getFriendlyError(printersError);
-  const isChannelError = friendlyError && friendlyError.includes("reinicie la aplicación");
+  const isChannelError =
+    friendlyError && friendlyError.includes("reinicie la aplicación");
 
   return (
     <article className={styles.card}>
       <h2 className={styles.cardTitle}>Impresora física del sistema</h2>
       <p className={styles.cardDescription}>
-        Compatible con cualquier impresora térmica instalada en el equipo (Epson, Xprinter, EC-Line, Star, Bixolon, POS-58/80 por USB, red Ethernet o Bluetooth).
+        Compatible con cualquier impresora térmica instalada en el equipo
+        (Epson, Xprinter, EC-Line, Star, Bixolon, POS-58/80 por USB, red
+        Ethernet o Bluetooth).
       </p>
 
       {isElectron ? (
@@ -48,7 +52,9 @@ const PrinterDeviceCard = ({
               const isDefault = printer?.isDefault;
               return (
                 <option key={name} value={name}>
-                  {isDefault ? `[Predeterminada del sistema] ${displayName}` : displayName}
+                  {isDefault
+                    ? `[Predeterminada del sistema] ${displayName}`
+                    : displayName}
                 </option>
               );
             })}
@@ -59,17 +65,33 @@ const PrinterDeviceCard = ({
             onClick={refreshPrinters}
             disabled={printersLoading}
           >
-            
+            <img
+              src={rotateIcon}
+              alt=""
+              className={styles.buttonIcon}
+              aria-hidden="true"
+            />
             {printersLoading ? "Actualizando..." : "Actualizar lista"}
           </button>
         </div>
       ) : (
-        <p className={styles.description}>La detección de impresoras solo está disponible en la aplicación de escritorio.</p>
+        <p className={styles.description}>
+          La detección de impresoras solo está disponible en la aplicación de
+          escritorio.
+        </p>
       )}
 
       {friendlyError ? (
-        <div className={`${styles.infoBanner} ${isChannelError ? styles.infoBannerBlue : styles.errorMessage}`} role="alert">
-          
+        <div
+          className={`${styles.infoBanner} ${isChannelError ? styles.infoBannerBlue : styles.errorMessage}`}
+          role="alert"
+        >
+          <img
+            src={isChannelError ? infoIcon : warningIcon}
+            alt=""
+            className={styles.bannerIcon}
+            aria-hidden="true"
+          />
           <span>{friendlyError}</span>
         </div>
       ) : null}

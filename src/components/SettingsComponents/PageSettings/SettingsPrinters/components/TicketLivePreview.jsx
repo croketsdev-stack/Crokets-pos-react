@@ -1,7 +1,10 @@
 import { useMemo, useState } from "react";
 import { buildTicketText } from "../../../../../utils/ticket/ticketBuilder";
 import { buildCashCutText } from "../../../../../utils/cashCutBuilder";
-import { wrapText, centerText } from "../../../../../utils/ticket/ticketLayoutFormatters";
+import {
+  wrapText,
+  centerText,
+} from "../../../../../utils/ticket/ticketLayoutFormatters";
 import styles from "../SettingsPrinters.module.css";
 import receiptIcon from "../../../../../assets/icons/receipt-solid-full.svg";
 
@@ -46,11 +49,22 @@ const TicketLivePreview = ({
 
     const activeBranch = {
       name: branch?.name || "SUCURSAL CANCÚN CENTRO",
-      address: template.showBranchAddress !== false ? (branch?.address || "Av. Tulum SM 20 MZ 1") : "",
-      city: template.showBranchAddress !== false ? (branch?.city || "Cancún") : "",
-      state: template.showBranchAddress !== false ? (branch?.state || "Q. Roo") : "",
-      postal_code: template.showBranchAddress !== false ? (branch?.postal_code || "77500") : "",
-      phone: template.showBranchPhone !== false ? (branch?.phone || "998 884 1234") : "",
+      address:
+        template.showBranchAddress !== false
+          ? branch?.address || "Av. Tulum SM 20 MZ 1"
+          : "",
+      city:
+        template.showBranchAddress !== false ? branch?.city || "Cancún" : "",
+      state:
+        template.showBranchAddress !== false ? branch?.state || "Q. Roo" : "",
+      postal_code:
+        template.showBranchAddress !== false
+          ? branch?.postal_code || "77500"
+          : "",
+      phone:
+        template.showBranchPhone !== false
+          ? branch?.phone || "998 884 1234"
+          : "",
     };
 
     const sampleSale = {
@@ -65,15 +79,29 @@ const TicketLivePreview = ({
       payment_method: "EFECTIVO",
       payments: [{ method_name: "EFECTIVO", amount: 500.0 }],
       status: "completed",
-      cashier_name: template.showCashierName !== false ? (user?.username || user?.email || "GAEL") : "",
+      cashier_name:
+        template.showCashierName !== false
+          ? user?.username || user?.email || "GAEL"
+          : "",
       customer_name: "PÚBLICO EN GENERAL",
-      customer_points_balance: template.showCustomerPoints !== false ? 150 : null,
+      customer_points_balance:
+        template.showCustomerPoints !== false ? 150 : null,
       points_earned: template.showCustomerPoints !== false ? 42 : 0,
       notes: template.showSaleNotes !== false ? "Entregar en mostrador" : "",
     };
     const sampleItems = [
-      { product_name: "NUPEC ADULTO 2KG", quantity: 1, unit_price: 350.0, total_price: 350.0 },
-      { product_name: "PREMIO DENTAL BONE", quantity: 1, unit_price: 70.0, total_price: 70.0 },
+      {
+        product_name: "NUPEC ADULTO 2KG",
+        quantity: 1,
+        unit_price: 350.0,
+        total_price: 350.0,
+      },
+      {
+        product_name: "PREMIO DENTAL BONE",
+        quantity: 1,
+        unit_price: 70.0,
+        total_price: 70.0,
+      },
     ];
     const footer = {
       line1: template.footerLine1 || "Gracias por su compra",
@@ -85,7 +113,10 @@ const TicketLivePreview = ({
       branch: activeBranch,
       sale: sampleSale,
       items: sampleItems,
-      cashierName: template.showCashierName !== false ? (user?.username || user?.email || "GAEL") : "",
+      cashierName:
+        template.showCashierName !== false
+          ? user?.username || user?.email || "GAEL"
+          : "",
       footer,
       isReprint: false,
     });
@@ -121,7 +152,7 @@ const TicketLivePreview = ({
       }
     }
     return text;
-  }, [branch, template, user, viewMode]);
+  }, [branch, columns, template, user, viewMode]);
 
   const handleViewVenta = () => {
     if (setViewMode) setViewMode("venta");
@@ -145,11 +176,20 @@ const TicketLivePreview = ({
       <div className={styles.previewHeaderAlt}>
         <div className={styles.previewHeaderLeft}>
           <div className={styles.previewIconWrapper}>
-            <img src={receiptIcon} alt="" className={styles.previewIcon} aria-hidden="true" />
+            <img
+              src={receiptIcon}
+              alt=""
+              className={styles.previewIcon}
+              aria-hidden="true"
+            />
           </div>
           <div>
-            <h3 className={styles.previewTitleAlt}>Simulador Térmico en Vivo</h3>
-            <p className={styles.previewSubtitle}>Previsualización a escala real según los parámetros de la sucursal</p>
+            <h3 className={styles.previewTitleAlt}>
+              Simulador Térmico en Vivo
+            </h3>
+            <p className={styles.previewSubtitle}>
+              Previsualización a escala real según los parámetros de la sucursal
+            </p>
           </div>
         </div>
         <span className={styles.widthBadge}>
@@ -160,14 +200,22 @@ const TicketLivePreview = ({
       <div className={styles.segmentedControl}>
         <button
           type="button"
-          className={viewMode === "venta" ? styles.segmentedButtonActive : styles.segmentedButton}
+          className={
+            viewMode === "venta"
+              ? styles.segmentedButtonActive
+              : styles.segmentedButton
+          }
           onClick={handleViewVenta}
         >
           Ticket de Venta
         </button>
         <button
           type="button"
-          className={viewMode === "corte" ? styles.segmentedButtonActive : styles.segmentedButton}
+          className={
+            viewMode === "corte"
+              ? styles.segmentedButtonActive
+              : styles.segmentedButton
+          }
           onClick={handleViewCorte}
         >
           Corte de Caja
@@ -178,8 +226,14 @@ const TicketLivePreview = ({
         <pre className={styles.ticketPre}>{ticketText}</pre>
       </div>
       <div className={styles.previewMetaRow}>
-        <span>Ancho: {widthMm} mm · {columns} columnas aprox.</span>
-        <button type="button" className={styles.buttonSecondarySmall} onClick={handleCopy}>
+        <span>
+          Ancho: {widthMm} mm · {columns} columnas aprox.
+        </span>
+        <button
+          type="button"
+          className={styles.buttonSecondarySmall}
+          onClick={handleCopy}
+        >
           {copied ? "¡Copiado!" : "Copiar texto"}
         </button>
       </div>
