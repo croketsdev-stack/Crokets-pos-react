@@ -2590,8 +2590,8 @@ La rama cumple rigurosamente con todos los gates de calidad y el protocolo estri
 
 ## Auditoría 2 de Cierre — RAMA `feature/settings-terminal-redesign` (13 de octubre de 2026)
 
-**Base:** `origin/main` (`b64a944`) · **HEAD:** `87872a9`
-**Alcance:** Restructuración completa del módulo Terminal y Sucursal (`/settings/terminal`), componentes modulares 2x2, modal accesible de edición de sucursal con cierre por Escape y validaciones blindadas (Title Case, 10 dígitos, email lowercase), desacople de pantalla completa y diagnóstico de conectividad en tiempo real.
+**Base:** `origin/main` (`b64a944`) · **HEAD:** `6c4284b`
+**Alcance:** Restructuración completa del módulo Terminal y Sucursal (`/settings/terminal`), componentes modulares 2x2, modal accesible de edición de sucursal con cierre por Escape y validaciones blindadas (Title Case con soporte de siglas fiscales, 10 dígitos, email lowercase), desacople de pantalla completa y diagnóstico de conectividad y autenticación en tiempo real.
 **Veredicto:** APROBADO SIN RESERVAS.
 
 ### 1. Comandos Mecánicos de Verificación
@@ -2602,14 +2602,20 @@ La rama cumple rigurosamente con todos los gates de calidad y el protocolo estri
 | Linter incremental   | `git diff ... \| xargs npx eslint`           | 0 errores, 0 warnings (EXIT 0)                     |  PASS  |
 | Prettier incremental | `git diff ... \| xargs npx prettier --check` | 100% de archivos formateados (EXIT 0)              |  PASS  |
 | Higiene de Git       | `git diff --check origin/main..HEAD`         | 0 espacios colgantes                               |  PASS  |
-| Suite Vitest         | `npm test -- --run`                          | 132/132 suites pasadas (1,822 tests en verde)      |  PASS  |
-| Compilación Frontend | `npm run build:frontend`                     | Compilación exitosa con Vite en ~4.0s              |  PASS  |
+| Suite Vitest         | `npm test -- --run`                          | 132/132 suites pasadas (1,829 tests en verde, +7)  |  PASS  |
+| Compilación Frontend | `npm run build:frontend`                     | Compilación exitosa con Vite en ~3.97s             |  PASS  |
 
-### 2. Cierre Definitivo de Hallazgos
+### 2. Cierre Definitivo de Hallazgos Mecánicos y Lógicos (F1–F2 y H1–H7)
 
-- **F1 (ESLint):** Resuelto en `terminalDiagnosticsService.js` mediante llamada segura a query y comprobación de `AbortController`.
-- **F2 (Prettier):** 4 archivos normalizados bajo el estándar Prettier del proyecto.
+- **F1 (ESLint) & F2 (Prettier):** Resuelto en `terminalDiagnosticsService.js` mediante llamada segura a query, comprobación de `AbortController` y formateo conforme al estándar del repo.
+- **H1 (Autenticación real):** `checkAuthSession()` consulta en vivo `supabase.auth.getSession()`; `runDiagnostics` reporta `status: "error"` y `overallOk: false` si no hay sesión activa.
+- **H2 (AbortError en timeout):** `if (error) throw error;` asegura que un `AbortError` no caiga como falso éxito y se reporte como "Tiempo de espera agotado".
+- **H3 (Latencia de 0 ms):** Sustitución de `|| null` por nullish coalescing `?? null` en `ConnectivityStatusCard.jsx` y `terminalDiagnosticsService.js`, evitando clasificar latencias sub-milisegundo como desconexión.
+- **H4 (Fuga de timeout):** `clearTimeout(timeoutId)` trasladado a bloque `finally` para ejecutarse en rutas de éxito y excepción.
+- **H5 (Race condition y render en modal):** Eliminado el antipatrón de `setState` durante el render en `BranchEditModal.jsx`; sincronización reactiva garantizada al recibir `branchProfile`.
+- **H6 (Preservación de siglas y compuestos):** `toTitleCase` enriquecido con listas blancas de siglas (CDMX, CUN, QROO, MID, II, III...) y preposiciones intermedias (`de`, `del`, `la`...).
+- **H7 (Deduplicación):** Se eliminó la función duplicada `hasElectronBridge`; `useSettingsTerminal.js` reutiliza `checkElectronBridge` exportado por el servicio.
 
 ### 3. Veredicto Final
 
-**APROBADO PARA MERGE.** La rama cumple rigurosamente con los 8 gates de calidad de `PR_REVIEW.md` y `AGENTS.md`.
+**APROBADO PARA MERGE.** La rama cumple rigurosamente con los 8 gates de calidad de `PR_REVIEW.md` y `AGENTS.md`. No existen bloqueantes, errores de linter ni regresiones en la suite completa de pruebas.
