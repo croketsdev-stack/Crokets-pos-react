@@ -1,5 +1,4 @@
-import { useMemo, useState } from "react";
-import xmarkIcon from "../../../../../assets/icons/xmark-solid-full.svg";
+import { useEffect, useMemo, useState } from "react";
 import styles from "../SettingsTerminal.module.css";
 
 export const BRANCH_TIMEZONE_OPTIONS = [
@@ -98,6 +97,21 @@ const BranchEditModal = ({
   const errors = useMemo(() => validateBranchForm(formData), [formData]);
   const hasErrors = Object.keys(errors).length > 0;
 
+  useEffect(() => {
+    if (!isOpen) return undefined;
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [isOpen, onClose]);
+
   const handleChange = (field) => (e) => {
     const { value } = e.target;
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -130,160 +144,154 @@ const BranchEditModal = ({
           <h3 id="branch-edit-modal-title" className={styles.modalTitle}>
             Editar datos de la sucursal
           </h3>
-          <button
-            type="button"
-            className={styles.closeButton}
-            onClick={onClose}
-            aria-label="Cerrar modal"
-          >
-            <img src={xmarkIcon} alt="" aria-hidden="true" />
-          </button>
         </header>
-        <form onSubmit={handleSubmit} className={styles.modalBody} noValidate>
-          <div className={styles.formGrid}>
-            <div className={styles.formField}>
-              <label htmlFor="branch-name" className={styles.formLabel}>
-                Nombre de sucursal{" "}
-                <span className={styles.requiredMark}>*</span>
-              </label>
-              <input
-                id="branch-name"
-                type="text"
-                className={styles.input}
-                value={formData.name}
-                onChange={handleChange("name")}
-                placeholder="Ej. Sucursal Torres"
-                maxLength={100}
-              />
-              {errors.name && (
-                <p role="alert" className={styles.fieldError}>
-                  {errors.name}
-                </p>
-              )}
-            </div>
+        <form onSubmit={handleSubmit} noValidate>
+          <div className={styles.modalBody}>
+            <div className={styles.formGrid}>
+              <div className={styles.formField}>
+                <label htmlFor="branch-name" className={styles.formLabel}>
+                  Nombre de sucursal{" "}
+                  <span className={styles.requiredMark}>*</span>
+                </label>
+                <input
+                  id="branch-name"
+                  type="text"
+                  className={styles.input}
+                  value={formData.name}
+                  onChange={handleChange("name")}
+                  placeholder="Ej. Sucursal Torres"
+                  maxLength={100}
+                />
+                {errors.name && (
+                  <p role="alert" className={styles.fieldError}>
+                    {errors.name}
+                  </p>
+                )}
+              </div>
 
-            <div className={styles.formField}>
-              <label htmlFor="branch-city" className={styles.formLabel}>
-                Ciudad <span className={styles.requiredMark}>*</span>
-              </label>
-              <input
-                id="branch-city"
-                type="text"
-                className={styles.input}
-                value={formData.city}
-                onChange={handleChange("city")}
-                placeholder="Ej. Cancún"
-                maxLength={50}
-              />
-              {errors.city && (
-                <p role="alert" className={styles.fieldError}>
-                  {errors.city}
-                </p>
-              )}
-            </div>
+              <div className={styles.formField}>
+                <label htmlFor="branch-city" className={styles.formLabel}>
+                  Ciudad <span className={styles.requiredMark}>*</span>
+                </label>
+                <input
+                  id="branch-city"
+                  type="text"
+                  className={styles.input}
+                  value={formData.city}
+                  onChange={handleChange("city")}
+                  placeholder="Ej. Cancún"
+                  maxLength={50}
+                />
+                {errors.city && (
+                  <p role="alert" className={styles.fieldError}>
+                    {errors.city}
+                  </p>
+                )}
+              </div>
 
-            <div className={styles.formField}>
-              <label htmlFor="branch-phone" className={styles.formLabel}>
-                Teléfono comercial{" "}
-                <span className={styles.requiredMark}>*</span>
-              </label>
-              <input
-                id="branch-phone"
-                type="tel"
-                inputMode="numeric"
-                className={styles.input}
-                value={formData.phone}
-                onChange={handleChange("phone")}
-                placeholder="Ej. 9999999999"
-                maxLength={10}
-              />
-              {errors.phone && (
-                <p role="alert" className={styles.fieldError}>
-                  {errors.phone}
-                </p>
-              )}
-            </div>
+              <div className={styles.formField}>
+                <label htmlFor="branch-phone" className={styles.formLabel}>
+                  Teléfono comercial{" "}
+                  <span className={styles.requiredMark}>*</span>
+                </label>
+                <input
+                  id="branch-phone"
+                  type="tel"
+                  inputMode="numeric"
+                  className={styles.input}
+                  value={formData.phone}
+                  onChange={handleChange("phone")}
+                  placeholder="Ej. 9999999999"
+                  maxLength={10}
+                />
+                {errors.phone && (
+                  <p role="alert" className={styles.fieldError}>
+                    {errors.phone}
+                  </p>
+                )}
+              </div>
 
-            <div className={styles.formField}>
-              <label htmlFor="branch-email" className={styles.formLabel}>
-                Correo de contacto{" "}
-                <span className={styles.requiredMark}>*</span>
-              </label>
-              <input
-                id="branch-email"
-                type="email"
-                className={styles.input}
-                value={formData.email}
-                onChange={handleChange("email")}
-                placeholder="contacto@sucursal.com"
-              />
-              {errors.email && (
-                <p role="alert" className={styles.fieldError}>
-                  {errors.email}
-                </p>
-              )}
-            </div>
+              <div className={styles.formField}>
+                <label htmlFor="branch-email" className={styles.formLabel}>
+                  Correo de contacto{" "}
+                  <span className={styles.requiredMark}>*</span>
+                </label>
+                <input
+                  id="branch-email"
+                  type="email"
+                  className={styles.input}
+                  value={formData.email}
+                  onChange={handleChange("email")}
+                  placeholder="contacto@sucursal.com"
+                />
+                {errors.email && (
+                  <p role="alert" className={styles.fieldError}>
+                    {errors.email}
+                  </p>
+                )}
+              </div>
 
-            <div className={`${styles.formField} ${styles.formFieldFull}`}>
-              <label htmlFor="branch-address" className={styles.formLabel}>
-                Dirección comercial{" "}
-                <span className={styles.requiredMark}>*</span>
-              </label>
-              <textarea
-                id="branch-address"
-                className={styles.textarea}
-                value={formData.address}
-                onChange={handleChange("address")}
-                placeholder="Dirección completa de la sucursal"
-                rows={3}
-                maxLength={250}
-              />
-              {errors.address && (
-                <p role="alert" className={styles.fieldError}>
-                  {errors.address}
-                </p>
-              )}
-            </div>
+              <div className={`${styles.formField} ${styles.formFieldFull}`}>
+                <label htmlFor="branch-address" className={styles.formLabel}>
+                  Dirección comercial{" "}
+                  <span className={styles.requiredMark}>*</span>
+                </label>
+                <textarea
+                  id="branch-address"
+                  className={styles.textarea}
+                  value={formData.address}
+                  onChange={handleChange("address")}
+                  placeholder="Dirección completa de la sucursal"
+                  rows={3}
+                  maxLength={250}
+                />
+                {errors.address && (
+                  <p role="alert" className={styles.fieldError}>
+                    {errors.address}
+                  </p>
+                )}
+              </div>
 
-            <div className={styles.formField}>
-              <label htmlFor="branch-timezone" className={styles.formLabel}>
-                Zona horaria <span className={styles.requiredMark}>*</span>
-              </label>
-              <select
-                id="branch-timezone"
-                className={styles.select}
-                value={formData.timezone}
-                onChange={handleChange("timezone")}
-              >
-                {BRANCH_TIMEZONE_OPTIONS.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-              {errors.timezone && (
-                <p role="alert" className={styles.fieldError}>
-                  {errors.timezone}
-                </p>
-              )}
-            </div>
+              <div className={styles.formField}>
+                <label htmlFor="branch-timezone" className={styles.formLabel}>
+                  Zona horaria <span className={styles.requiredMark}>*</span>
+                </label>
+                <select
+                  id="branch-timezone"
+                  className={styles.select}
+                  value={formData.timezone}
+                  onChange={handleChange("timezone")}
+                >
+                  {BRANCH_TIMEZONE_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                {errors.timezone && (
+                  <p role="alert" className={styles.fieldError}>
+                    {errors.timezone}
+                  </p>
+                )}
+              </div>
 
-            <div className={styles.formField}>
-              <label htmlFor="branch-code" className={styles.formLabel}>
-                Código oficial
-              </label>
-              <input
-                id="branch-code"
-                type="text"
-                className={styles.inputDisabled}
-                value={branchProfile?.code || branch?.code || ""}
-                disabled
-                readOnly
-              />
-              <p className={styles.fieldHint}>
-                El código oficial no es editable para preservar folios y series
-                fiscales.
-              </p>
+              <div className={styles.formField}>
+                <label htmlFor="branch-code" className={styles.formLabel}>
+                  Código oficial
+                </label>
+                <input
+                  id="branch-code"
+                  type="text"
+                  className={styles.inputDisabled}
+                  value={branchProfile?.code || branch?.code || ""}
+                  disabled
+                  readOnly
+                />
+                <p className={styles.fieldHint}>
+                  El código oficial no es editable para preservar folios y
+                  series fiscales.
+                </p>
+              </div>
             </div>
           </div>
 

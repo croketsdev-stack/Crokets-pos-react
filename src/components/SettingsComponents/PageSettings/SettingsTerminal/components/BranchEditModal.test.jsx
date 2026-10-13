@@ -40,15 +40,37 @@ describe("BranchEditModal", () => {
     expect(screen.queryByRole("dialog")).toBeNull();
   });
 
-  it("muestra el boton de cerrar con icono y aria-label", () => {
+  it("cierra el modal al pulsar la tecla Escape", () => {
     const onClose = vi.fn();
     renderModal({ onClose });
 
-    const closeButton = screen.getByRole("button", { name: "Cerrar modal" });
-    expect(closeButton.querySelector("img")).toBeTruthy();
+    fireEvent.keyDown(window, { key: "Escape" });
 
-    fireEvent.click(closeButton);
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("no cierra el modal con otras teclas", () => {
+    const onClose = vi.fn();
+    renderModal({ onClose });
+
+    fireEvent.keyDown(window, { key: "Enter" });
+
+    expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it("cierra el modal al pulsar el boton Cancelar", () => {
+    const onClose = vi.fn();
+    renderModal({ onClose });
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancelar" }));
+
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it("no renderiza el boton de cierre con aria-label Cerrar modal", () => {
+    renderModal();
+
+    expect(screen.queryByRole("button", { name: "Cerrar modal" })).toBeNull();
   });
 
   it("precarga los datos del perfil y deshabilita el codigo oficial", () => {
