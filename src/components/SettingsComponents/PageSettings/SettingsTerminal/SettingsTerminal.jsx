@@ -1,195 +1,145 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useBranch } from "../../../../contexts/BranchContext";
-import {
-  fetchDeviceCode,
-  checkSupabaseConnection,
-  readZoomFactor,
-  applyZoomFactor,
-  resetZoom,
-} from "../../../../services/terminalSettingsService";
-import shared from "../PageSettings.module.css";
-
-const ZOOM_STEP = 0.1;
-
-const CONNECTION_LABELS = {
-  checking: "Verificando conexión...",
-  online: "Conectado a Supabase",
-  offline: "Sin conexión con Supabase",
-};
+import { useSettingsTerminal } from "./hooks/useSettingsTerminal";
+import { updateBranchContact } from "./services/branchProfileService";
+import styles from "./SettingsTerminal.module.css";
+import BranchInfoCard from "./components/BranchInfoCard";
+import BranchEditModal from "./components/BranchEditModal";
+import TerminalDeviceCard from "./components/TerminalDeviceCard";
+import ConnectivityStatusCard from "./components/ConnectivityStatusCard";
+import DisplaySettingsCard from "./components/DisplaySettingsCard";
 
 const SettingsTerminal = () => {
-  const { branch } = useBranch();
+  const { branch, setBranch } = useBranch();
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [savingBranch, setSavingBranch] = useState(false);
+  const [branchUpdateFeedback, setBranchUpdateFeedback] = useState(null);
 
-  const [device, setDevice] = useState({ status: "loading", code: null });
-  const [connection, setConnection] = useState("checking");
-  const [zoomFactor, setZoomFactor] = useState(1);
-  const [zoomFeedback, setZoomFeedback] = useState(null);
+  const {
+    device,
+    connection,
+    zoomFactor,
+    zoomFeedback,
+    branchProfile,
+    cashSession,
+    isOnline,
+    diagnostics,
+    diagnosticsLoading,
+    copyFeedback,
+    isAdmin,
+    fullscreen,
+    fullscreenFeedback,
+    screenInfo,
+    zoomChips,
+    hasElectronBridge,
+    handleZoomChange,
+    handleZoomSet,
+    handleZoomReset,
+    handleRunDiagnostics,
+    handleCopyDeviceCode,
+    handleToggleFullscreen,
+    refreshBranchProfile,
+    clearFeedbacks,
+  } = useSettingsTerminal(branch);
 
-  useEffect(() => {
-    let cancelled = false;
+  const handleOpenEdit = () => {
+    setIsEditModalOpen(true);
+    setBranchUpdateFeedback(null);
+    clearFeedbacks();
+  };
 
-    fetchDeviceCode().then((result) => {
-      if (cancelled) return;
-      setDevice({
-        status: result.success ? "ready" : "error",
-        code: result.deviceCode,
+  const handleCloseEdit = () => {
+    setIsEditModalOpen(false);
+  };
+
+  const handleSaveBranch = async (updates) => {
+    if (!branch?.id) return;
+    setSavingBranch(true);
+    const result = await updateBranchContact(branch.id, updates);
+    if (result.success) {
+      setBranchUpdateFeedback({
+        type: "success",
+        message: "Datos de sucursal actualizados correctamente.",
       });
-    });
-
-    checkSupabaseConnection().then((result) => {
-      if (cancelled) return;
-      setConnection(result.connected ? "online" : "offline");
-    });
-
-    readZoomFactor().then((result) => {
-      if (cancelled || !result.success) return;
-      setZoomFactor(result.zoomFactor);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const handleZoomChange = async (delta) => {
-    setZoomFeedback(null);
-
-    const result = await applyZoomFactor(zoomFactor + delta);
-
-    if (!result.success) {
-      setZoomFeedback({ type: "error", message: result.error });
-      return;
+      setIsEditModalOpen(false);
+      if (result.data) {
+        setBranch({ ...branch, ...result.data });
+      }
+      refreshBranchProfile();
+    } else {
+      setBranchUpdateFeedback({
+        type: "error",
+        message: result.error || "Error al actualizar sucursal.",
+      });
     }
-
-    setZoomFactor(result.zoomFactor);
-    setZoomFeedback({
-      type: "success",
-      message: `Zoom de la ventana: ${Math.round(result.zoomFactor * 100)}%.`,
-    });
-  };
-
-  const handleZoomReset = async () => {
-    setZoomFeedback(null);
-
-    const result = await resetZoom();
-
-    if (!result.success) {
-      setZoomFeedback({ type: "error", message: result.error });
-      return;
-    }
-
-    setZoomFactor(result.zoomFactor);
-    setZoomFeedback({
-      type: "success",
-      message: "Zoom de la ventana restablecido.",
-    });
-  };
-
-  const handleReconnect = async () => {
-    setConnection("checking");
-
-    const result = await checkSupabaseConnection();
-    setConnection(result.connected ? "online" : "offline");
+    setSavingBranch(false);
   };
 
   return (
-    <section className={shared.page} aria-labelledby="settings-terminal-title">
-      <header className={shared.pageHeader}>
-        <h1 id="settings-terminal-title" className={shared.pageTitle}>
+    <section className={styles.page} aria-labelledby="settings-terminal-title">
+      <header className={styles.pageHeader}>
+        <h1 id="settings-terminal-title" className={styles.pageTitle}>
           Terminal y Sucursal
         </h1>
-        <p className={shared.pageSubtitle}>
-          Identificación del dispositivo y estado del sistema
+        <p className={styles.pageSubtitle}>
+          Configuración operativa de la terminal, sucursal y conectividad
         </p>
       </header>
 
-      <article className={shared.card}>
-        <h2 className={shared.cardTitle}>Identificación del terminal</h2>
-        <p className={shared.cardDescription}>
-          Datos que vinculan este puesto de trabajo con la sucursal en Supabase.
+      {branchUpdateFeedback?.type === "success" && (
+        <p role="status" className={styles.statusMessage}>
+          {branchUpdateFeedback.message}
         </p>
-
-        <dl className={shared.definitionList}>
-          <dt className={shared.definitionTerm}>Código del dispositivo</dt>
-          <dd className={shared.definitionValue}>
-            {device.status === "loading"
-              ? "Cargando código del dispositivo..."
-              : device.status === "ready"
-                ? device.code
-                : "No disponible en este entorno"}
-          </dd>
-
-          <dt className={shared.definitionTerm}>Sucursal vinculada</dt>
-          <dd className={shared.definitionValue}>
-            {branch?.code
-              ? `${branch.code} - ${branch.name}`
-              : "Sin sucursal asignada"}
-          </dd>
-
-          <dt className={shared.definitionTerm}>Conexión con Supabase</dt>
-          <dd className={shared.definitionValue}>
-            <span role="status">{CONNECTION_LABELS[connection]}</span>
-          </dd>
-        </dl>
-
-        <div className={shared.buttonRow}>
-          <button
-            type="button"
-            className={shared.buttonSecondary}
-            onClick={handleReconnect}
-            disabled={connection === "checking"}
-          >
-            Revisar conexión
-          </button>
-        </div>
-      </article>
-
-      <article className={shared.card}>
-        <h2 className={shared.cardTitle}>Zoom de la ventana</h2>
-        <p className={shared.cardDescription}>
-          Ajuste visual de la interfaz para esta terminal.
+      )}
+      {branchUpdateFeedback?.type === "error" && (
+        <p role="alert" className={styles.errorMessage}>
+          {branchUpdateFeedback.message}
         </p>
+      )}
 
-        <div className={shared.buttonRow}>
-          <button
-            type="button"
-            className={shared.button}
-            onClick={() => handleZoomChange(ZOOM_STEP)}
-          >
-            Acercar vista
-          </button>
-          <button
-            type="button"
-            className={shared.button}
-            onClick={() => handleZoomChange(-ZOOM_STEP)}
-          >
-            Alejar vista
-          </button>
-          <button
-            type="button"
-            className={shared.buttonSecondary}
-            onClick={handleZoomReset}
-          >
-            Restablecer vista
-          </button>
-        </div>
+      <div className={styles.grid}>
+        <BranchInfoCard
+          branch={branch}
+          branchProfile={branchProfile}
+          isAdmin={isAdmin}
+          onEdit={handleOpenEdit}
+        />
+        <TerminalDeviceCard
+          device={device}
+          copyFeedback={copyFeedback}
+          cashSession={cashSession}
+          onCopyDeviceCode={handleCopyDeviceCode}
+        />
+        <ConnectivityStatusCard
+          isOnline={isOnline}
+          diagnostics={diagnostics}
+          diagnosticsLoading={diagnosticsLoading}
+          connection={connection}
+          onRunDiagnostics={handleRunDiagnostics}
+        />
+        <DisplaySettingsCard
+          zoomFactor={zoomFactor}
+          zoomChips={zoomChips}
+          zoomFeedback={zoomFeedback}
+          fullscreen={fullscreen}
+          fullscreenFeedback={fullscreenFeedback}
+          screenInfo={screenInfo}
+          hasElectronBridge={hasElectronBridge}
+          onZoomChange={handleZoomChange}
+          onZoomSet={handleZoomSet}
+          onZoomReset={handleZoomReset}
+          onToggleFullscreen={handleToggleFullscreen}
+        />
+      </div>
 
-        <p className={shared.hint}>
-          Zoom actual: {Math.round(zoomFactor * 100)}%
-        </p>
-
-        {zoomFeedback?.type === "error" ? (
-          <p role="alert" className={shared.errorMessage}>
-            {zoomFeedback.message}
-          </p>
-        ) : null}
-
-        {zoomFeedback?.type === "success" ? (
-          <p role="status" className={shared.statusMessage}>
-            {zoomFeedback.message}
-          </p>
-        ) : null}
-      </article>
+      <BranchEditModal
+        isOpen={isEditModalOpen}
+        branchProfile={branchProfile}
+        branch={branch}
+        onClose={handleCloseEdit}
+        onSave={handleSaveBranch}
+        saving={savingBranch}
+      />
     </section>
   );
 };
