@@ -14,7 +14,8 @@ export const DEFAULT_TICKET_CUSTOMIZATION = Object.freeze({
   footerLine1: "Gracias por su compra",
   footerLine2: "Agenda tu cita de baño",
   footerPhone: "998 117 5387",
-  returnPolicy: "Para cambios o devoluciones presentar ticket dentro de los 7 días posteriores a su compra.",
+  returnPolicy:
+    "Para cambios o devoluciones presentar ticket dentro de los 7 días posteriores a su compra.",
   showCustomerPoints: true,
   showCashierName: true,
   showSaleNotes: true,
@@ -62,12 +63,14 @@ const writeCache = (value) => {
 };
 
 const normalizeTemplate = (template = {}) => ({
-  headerSlogan: template.headerSlogan ?? DEFAULT_TICKET_CUSTOMIZATION.headerSlogan,
+  headerSlogan:
+    template.headerSlogan ?? DEFAULT_TICKET_CUSTOMIZATION.headerSlogan,
   fiscalInfo: template.fiscalInfo ?? DEFAULT_TICKET_CUSTOMIZATION.fiscalInfo,
   footerLine1: template.footerLine1 ?? DEFAULT_TICKET_CUSTOMIZATION.footerLine1,
   footerLine2: template.footerLine2 ?? DEFAULT_TICKET_CUSTOMIZATION.footerLine2,
   footerPhone: template.footerPhone ?? DEFAULT_TICKET_CUSTOMIZATION.footerPhone,
-  returnPolicy: template.returnPolicy ?? DEFAULT_TICKET_CUSTOMIZATION.returnPolicy,
+  returnPolicy:
+    template.returnPolicy ?? DEFAULT_TICKET_CUSTOMIZATION.returnPolicy,
   showCustomerPoints: Boolean(template.showCustomerPoints),
   showCashierName: Boolean(template.showCashierName),
   showSaleNotes: Boolean(template.showSaleNotes),
@@ -93,6 +96,10 @@ export const getTicketCustomization = async ({ branchId } = {}) => {
     const { data, error } = await query.limit(1).maybeSingle();
 
     if (error) {
+      console.error(
+        "Error consultando plantilla de ticket en Supabase:",
+        error
+      );
       const cached = readCache();
       if (cached) return cached;
       return { ...DEFAULT_TICKET_CUSTOMIZATION };
@@ -107,7 +114,10 @@ export const getTicketCustomization = async ({ branchId } = {}) => {
     let parsed = { ...DEFAULT_TICKET_CUSTOMIZATION };
     try {
       if (data.setting_value) {
-        const raw = typeof data.setting_value === "string" ? JSON.parse(data.setting_value) : data.setting_value;
+        const raw =
+          typeof data.setting_value === "string"
+            ? JSON.parse(data.setting_value)
+            : data.setting_value;
         parsed = normalizeTemplate(raw);
       }
     } catch {
@@ -116,7 +126,8 @@ export const getTicketCustomization = async ({ branchId } = {}) => {
 
     writeCache(parsed);
     return parsed;
-  } catch {
+  } catch (error) {
+    console.error("Error al obtener plantilla de ticket:", error);
     const cached = readCache();
     if (cached) return cached;
     return { ...DEFAULT_TICKET_CUSTOMIZATION };
@@ -139,7 +150,8 @@ export const saveTicketCustomization = async ({ branchId, template } = {}) => {
     query.is("branch_id", null);
   }
 
-  const { data: existingSetting, error: existingError } = await query.maybeSingle();
+  const { data: existingSetting, error: existingError } =
+    await query.maybeSingle();
 
   if (existingError) {
     throw existingError;
@@ -161,21 +173,19 @@ export const saveTicketCustomization = async ({ branchId, template } = {}) => {
     return normalized;
   }
 
-  const { error: insertError } = await supabase
-    .from("system_settings")
-    .insert([
-      {
-        id: crypto.randomUUID(),
-        setting_key: TICKET_CUSTOMIZATION_SETTING_KEY,
-        setting_value: settingValue,
-        value_type: "json",
-        description: "Plantilla de personalización del ticket de venta",
-        branch_id: branchId || null,
-        is_active: true,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      },
-    ]);
+  const { error: insertError } = await supabase.from("system_settings").insert([
+    {
+      id: crypto.randomUUID(),
+      setting_key: TICKET_CUSTOMIZATION_SETTING_KEY,
+      setting_value: settingValue,
+      value_type: "json",
+      description: "Plantilla de personalización del ticket de venta",
+      branch_id: branchId || null,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+  ]);
 
   if (insertError) throw insertError;
   writeCache(normalized);

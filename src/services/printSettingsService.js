@@ -103,61 +103,34 @@ const SELECTED_PRINTER_KEY = "settings_selected_printer";
 const TICKET_COPIES_KEY = "settings_ticket_copies";
 const TICKET_FEED_LINES_KEY = "settings_ticket_feed_lines";
 
-export const getSelectedPrinter = () => {
-  try {
-    return window.localStorage.getItem(SELECTED_PRINTER_KEY) || "";
-  } catch {
-    return "";
-  }
-};
+export const getSelectedPrinter = () =>
+  readStoredValue(SELECTED_PRINTER_KEY) || "";
 
-export const saveSelectedPrinter = (value = "") => {
-  try {
-    window.localStorage.setItem(SELECTED_PRINTER_KEY, String(value || ""));
-    return true;
-  } catch {
-    return false;
-  }
-};
+export const saveSelectedPrinter = (value = "") =>
+  writeStoredValue(SELECTED_PRINTER_KEY, String(value || ""));
 
 export const getTicketCopies = () => {
-  try {
-    const v = window.localStorage.getItem(TICKET_COPIES_KEY);
-    const n = Number(v);
-    return Number.isFinite(n) && n > 0 ? Math.min(5, Math.trunc(n)) : 1;
-  } catch {
-    return 1;
-  }
+  const v = readStoredValue(TICKET_COPIES_KEY);
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? Math.min(5, Math.trunc(n)) : 1;
 };
 
 export const saveTicketCopies = (value = 1) => {
-  try {
-    const n = Number(value);
-    const valid = Number.isFinite(n) && n > 0 ? Math.min(5, Math.trunc(n)) : 1;
-    window.localStorage.setItem(TICKET_COPIES_KEY, String(valid));
-    return { success: true, copies: valid };
-  } catch {
-    return { success: false, copies: getTicketCopies() };
-  }
+  const n = Number(value);
+  const valid = Number.isFinite(n) && n > 0 ? Math.min(5, Math.trunc(n)) : 1;
+  const ok = writeStoredValue(TICKET_COPIES_KEY, String(valid));
+  return { success: ok, copies: ok ? valid : getTicketCopies() };
 };
 
 export const getTicketFeedLines = () => {
-  try {
-    const v = window.localStorage.getItem(TICKET_FEED_LINES_KEY);
-    const n = Number(v);
-    return Number.isFinite(n) && n > 0 ? Math.min(5, Math.trunc(n)) : 2;
-  } catch {
-    return 2;
-  }
+  const v = readStoredValue(TICKET_FEED_LINES_KEY);
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? Math.min(5, Math.trunc(n)) : 2;
 };
 
 export const saveTicketFeedLines = (value = 2) => {
-  try {
-    const n = Number(value);
-    const valid = Number.isFinite(n) && n > 0 ? Math.min(5, Math.trunc(n)) : 2;
-    window.localStorage.setItem(TICKET_FEED_LINES_KEY, String(valid));
-    return { success: true, feedLines: valid };
-  } catch {
-    return { success: false, feedLines: getTicketFeedLines() };
-  }
+  const n = Number(value);
+  const valid = Number.isFinite(n) && n > 0 ? Math.min(5, Math.trunc(n)) : 2;
+  const ok = writeStoredValue(TICKET_FEED_LINES_KEY, String(valid));
+  return { success: ok, feedLines: ok ? valid : getTicketFeedLines() };
 };

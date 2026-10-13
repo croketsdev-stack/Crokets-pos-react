@@ -76,3 +76,26 @@ export const getAvailablePrinters = async () => {
     };
   }
 };
+
+export const openCashDrawerBridge = async ({ printerDeviceName } = {}) => {
+  if (!hasElectronBridge()) {
+    return {
+      success: false,
+      message:
+        "La apertura de cajón solo está disponible en la aplicación de escritorio.",
+      simulated: true,
+    };
+  }
+
+  try {
+    return await window.electronAPI.invoke("open-cash-drawer", {
+      deviceName: printerDeviceName,
+    });
+  } catch (error) {
+    return {
+      success: false,
+      message: "No se pudo abrir el cajón de dinero.",
+      error: error?.message || DEFAULT_UNKNOWN_ERROR,
+    };
+  }
+};

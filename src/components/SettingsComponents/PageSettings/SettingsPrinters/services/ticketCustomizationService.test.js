@@ -7,7 +7,11 @@ vi.mock("../../../../../lib/supabaseClient", () => {
   return { supabase: mockSupabase };
 });
 
-import { getTicketCustomization, saveTicketCustomization, DEFAULT_TICKET_CUSTOMIZATION } from "./ticketCustomizationService";
+import {
+  getTicketCustomization,
+  saveTicketCustomization,
+  DEFAULT_TICKET_CUSTOMIZATION,
+} from "./ticketCustomizationService";
 import { supabase } from "../../../../../lib/supabaseClient";
 
 const buildQueryChain = (result = {}) => {
@@ -50,7 +54,10 @@ describe("ticketCustomizationService", () => {
   });
 
   it("Fallback a valores por defecto y a caché local ante error de red.", async () => {
-    const query = buildQueryChain({ data: null, error: { message: "network" } });
+    const query = buildQueryChain({
+      data: null,
+      error: { message: "network" },
+    });
     supabase.from.mockReturnValue(query);
     const result = await getTicketCustomization({ branchId: null });
     expect(result).toEqual(DEFAULT_TICKET_CUSTOMIZATION);
@@ -59,7 +66,10 @@ describe("ticketCustomizationService", () => {
   it("Guardado correcto de configuración (insert/update).", async () => {
     const query = buildQueryChain({ data: null, error: null });
     supabase.from.mockReturnValue(query);
-    const saved = await saveTicketCustomization({ branchId: null, template: { footerLine1: "OK" } });
+    const saved = await saveTicketCustomization({
+      branchId: null,
+      template: { footerLine1: "OK" },
+    });
     expect(saved.footerLine1).toBe("OK");
   });
 });
