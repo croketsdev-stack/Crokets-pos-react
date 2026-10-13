@@ -1,6 +1,39 @@
 import { useEffect, useMemo, useState } from "react";
 import styles from "../SettingsTerminal.module.css";
 
+/**
+ * Convierte un texto a Title Case (primera letra de cada palabra en mayúscula, resto minúsculas)
+ */
+export const toTitleCase = (str = "") =>
+  str
+    .toLowerCase()
+    .trim()
+    .replace(/\s+/g, " ")
+    .split(" ")
+    .map((word) => (word ? word.charAt(0).toUpperCase() + word.slice(1) : ""))
+    .join(" ");
+
+/**
+ * Normaliza una dirección comercial: mayúscula inicial y espacios limpios sin forzar Title Case
+ */
+export const normalizeAddress = (address = "") => {
+  const clean = (address || "").trim().replace(/\s+/g, " ");
+  if (!clean) return "";
+  return clean.charAt(0).toUpperCase() + clean.slice(1);
+};
+
+/**
+ * Sanea y estandariza el payload completo del formulario antes de persistirlo
+ */
+export const sanitizeBranchForm = (form = {}) => ({
+  name: toTitleCase(form.name),
+  city: toTitleCase(form.city),
+  phone: (form.phone || "").replace(/\D/g, "").slice(0, 10),
+  email: (form.email || "").trim().toLowerCase(),
+  address: normalizeAddress(form.address),
+  timezone: form.timezone,
+});
+
 export const BRANCH_TIMEZONE_OPTIONS = [
   {
     value: "America/Cancun",
@@ -113,21 +146,17 @@ const BranchEditModal = ({
   }, [isOpen, onClose]);
 
   const handleChange = (field) => (e) => {
-    const { value } = e.target;
+    let value = e.target.value;
+    if (field === "phone") {
+      value = value.replace(/\D/g, "").slice(0, 10);
+    }
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     if (hasErrors) return;
-    onSave({
-      name: formData.name.trim(),
-      city: formData.city.trim(),
-      phone: formData.phone.trim(),
-      email: formData.email.trim(),
-      address: formData.address.trim(),
-      timezone: formData.timezone,
-    });
+    onSave(sanitizeBranchForm(formData));
   };
 
   if (!isOpen) return null;
