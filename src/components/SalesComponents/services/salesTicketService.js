@@ -1,7 +1,12 @@
 import { supabase } from "../../../lib/supabaseClient";
 import { buildTicketText } from "../../../utils/ticket/ticketBuilder";
 import { printTicket } from "../../../utils/ticketPrinter";
-import { getTicketPrintProfile, getSelectedPrinter, getTicketCopies } from "../../../services/printSettingsService";
+import {
+  getTicketPrintProfile,
+  getSelectedPrinter,
+  getTicketCopies,
+} from "../../../services/printSettingsService";
+import { getTicketCustomization } from "../../SettingsComponents/PageSettings/SettingsPrinters/services/ticketCustomizationService";
 import {
   getRewardCartItems,
   getRewardItemPointsPerUnit,
@@ -290,6 +295,13 @@ export const printSaleTicket = async ({
       "CAJERO"
     ).toUpperCase();
 
+    let customization = null;
+    try {
+      customization = await getTicketCustomization({ branchId: branch?.id });
+    } catch (error) {
+      console.error("Error al obtener personalización del ticket:", error);
+    }
+
     const ticketText = buildTicketText({
       branch: {
         name: branch?.name || "SUCURSAL",
@@ -333,7 +345,14 @@ export const printSaleTicket = async ({
       },
       items: itemsForPrint,
       cashierName,
-      footer: customization,
+      footer: {
+        line1: customization?.footerLine1 || "Gracias por su compra",
+        line2: customization?.footerLine2 || "Agenda tu cita de baño",
+        phone: customization?.footerPhone || "998 117 5387",
+        returnPolicy:
+          customization?.returnPolicy ||
+          "Para cambios o devoluciones presentar ticket de compra",
+      },
       isReprint: false,
     });
 

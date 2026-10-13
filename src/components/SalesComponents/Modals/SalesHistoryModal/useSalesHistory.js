@@ -23,7 +23,11 @@ import {
 import { useDidChange } from "../../../../hooks/useDidChange";
 import { useRequestStatus } from "../../../../hooks/useRequestStatus";
 import { printTicket } from "../../../../utils/ticketPrinter";
-import { getTicketPrintProfile, getSelectedPrinter, getTicketCopies } from "../../../../services/printSettingsService";
+import {
+  getTicketPrintProfile,
+  getSelectedPrinter,
+  getTicketCopies,
+} from "../../../../services/printSettingsService";
 import { getTicketCustomization } from "../../../SettingsComponents/PageSettings/SettingsPrinters/services/ticketCustomizationService";
 import { buildTicketText } from "../../../../utils/ticket/ticketBuilder";
 
@@ -579,6 +583,13 @@ export const useSalesHistory = ({
         reference: p.reference || "",
       }));
 
+      let customization = null;
+      try {
+        customization = await getTicketCustomization({ branchId: branch?.id });
+      } catch (err) {
+        console.error("Error al obtener personalización del ticket:", err);
+      }
+
       const ticketText = buildTicketText({
         branch: {
           name: branch?.name || "SUCURSAL",
@@ -645,10 +656,12 @@ export const useSalesHistory = ({
         items: itemsForPrint,
         cashierName: ticketForPrint.cashier,
         footer: {
-          line1: customization.footerLine1 || "Gracias por su compra",
-          line2: customization.footerLine2 || "Agenda tu cita de baño",
-          phone: customization.footerPhone || "998 117 5387",
-          returnPolicy: customization.returnPolicy || "Para cambios o devoluciones presentar ticket de compra",
+          line1: customization?.footerLine1 || "Gracias por su compra",
+          line2: customization?.footerLine2 || "Agenda tu cita de baño",
+          phone: customization?.footerPhone || "998 117 5387",
+          returnPolicy:
+            customization?.returnPolicy ||
+            "Para cambios o devoluciones presentar ticket de compra",
         },
         isReprint: true,
         reprintedAt: new Date(),
