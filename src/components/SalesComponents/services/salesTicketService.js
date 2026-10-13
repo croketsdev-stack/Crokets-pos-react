@@ -7,7 +7,7 @@ import {
   getTicketCopies,
   getTicketFeedLines,
 } from "../../../services/printSettingsService";
-import { getTicketCustomization } from "../../SettingsComponents/PageSettings/SettingsPrinters/services/ticketCustomizationService";
+import { getTicketCustomization } from "../../../services/ticketCustomizationService";
 import {
   getRewardCartItems,
   getRewardItemPointsPerUnit,

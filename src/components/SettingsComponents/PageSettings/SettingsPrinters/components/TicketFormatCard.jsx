@@ -1,6 +1,5 @@
 import styles from "../SettingsPrinters.module.css";
-
-const TICKET_WIDTH_OPTIONS = [58, 80];
+import { TICKET_WIDTH_OPTIONS } from "../../../../../services/printSettingsService";
 
 const TicketFormatCard = ({
   widthMm,

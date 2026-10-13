@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
-vi.mock("../../../../../lib/supabaseClient", () => {
+vi.mock("../lib/supabaseClient", () => {
   const mockSupabase = {
     from: vi.fn(),
   };
@@ -12,7 +12,7 @@ import {
   saveTicketCustomization,
   DEFAULT_TICKET_CUSTOMIZATION,
 } from "./ticketCustomizationService";
-import { supabase } from "../../../../../lib/supabaseClient";
+import { supabase } from "../lib/supabaseClient";
 
 const buildQueryChain = (result = {}) => {
   const query = {

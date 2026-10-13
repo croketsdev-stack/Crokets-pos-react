@@ -4,7 +4,7 @@
  * Usa public.system_settings con setting_key 'ticket_customization' (value_type 'json').
  */
 
-import { supabase } from "../../../../../lib/supabaseClient";
+import { supabase } from "../lib/supabaseClient";
 
 export const TICKET_CUSTOMIZATION_SETTING_KEY = "ticket_customization";
 

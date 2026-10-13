@@ -1,7 +1,7 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
 // Lista blanca de canales permitidos para comunicación bidireccional (solicitud-respuesta).
-// Debe reflejar exactamente los ipcMain.handle registrados en electron/main.js.
+// Debe reflejar exactamente los ipcMain.handle registrados en electron/mainProcess.js.
 const allowedInvokeChannels = [
   "get-device-code",
   "close-app",

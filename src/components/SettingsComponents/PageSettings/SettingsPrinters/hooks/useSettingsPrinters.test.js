@@ -12,8 +12,6 @@ vi.mock("../../../../../utils/ticketPrinter", async () => {
   };
 });
 
-// no direct import; bridge mocked via window if needed
-
 describe("useSettingsPrinters", () => {
   beforeEach(() => {
     vi.clearAllMocks();

@@ -6,9 +6,6 @@ import {
   hasElectronBridge,
 } from "../../../../../utils/ticketPrinter";
 import {
-  TICKET_WIDTH_OPTIONS,
-  PRINT_MODE_AUTO,
-  PRINT_MODE_CONFIRM,
   getTicketWidthMm,
   saveTicketWidthMm,
   getPrintMode,
@@ -25,18 +22,11 @@ import {
   DEFAULT_TICKET_CUSTOMIZATION,
   getTicketCustomization,
   saveTicketCustomization,
-} from "../services/ticketCustomizationService";
+} from "../../../../../services/ticketCustomizationService";
 import {
   wrapText,
   centerText,
 } from "../../../../../utils/ticket/ticketLayoutFormatters";
-
-export const TICKET_WIDTH_OPTIONS_LIST = TICKET_WIDTH_OPTIONS;
-
-export const PRINT_MODE_LABELS = {
-  [PRINT_MODE_AUTO]: "Imprimir automáticamente después de cobrar",
-  [PRINT_MODE_CONFIRM]: "Pedir confirmación antes de imprimir",
-};
 
 const DEFAULT_FEEDBACK = null;
 
@@ -135,33 +125,15 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
   useEffect(() => {
     let isMounted = true;
     if (isElectron) {
-      Promise.resolve().then(async () => {
+      Promise.resolve().then(() => {
         if (!isMounted) return;
-        setPrintersLoading(true);
-        setPrintersError(null);
-        try {
-          const result = await getAvailablePrinters();
-          if (!isMounted) return;
-          setPrintersLoading(false);
-          if (!result.success) {
-            setPrintersError(result.error || "Error al obtener impresoras");
-            setPrinters(result.printers || []);
-            return;
-          }
-          setPrinters(result.printers || []);
-          syncSelectedPrinter(result.printers || []);
-        } catch (error) {
-          console.error("Error cargando impresoras iniciales:", error);
-          if (!isMounted) return;
-          setPrintersLoading(false);
-          setPrintersError("Error al obtener impresoras");
-        }
+        refreshPrinters();
       });
     }
     return () => {
       isMounted = false;
     };
-  }, [isElectron, syncSelectedPrinter]);
+  }, [isElectron, refreshPrinters]);
 
   const handleWidthChange = useCallback((event) => {
     const result = saveTicketWidthMm(event.target.value);
@@ -375,7 +347,6 @@ export const useSettingsPrinters = ({ branchId = null } = {}) => {
     handleSaveTemplate,
     handleTestPrint,
     handleOpenDrawer,
-    buildTestTicketText,
     previewData,
   };
 };
