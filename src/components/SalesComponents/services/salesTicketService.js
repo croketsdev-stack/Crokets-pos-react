@@ -1,7 +1,7 @@
 import { supabase } from "../../../lib/supabaseClient";
 import { buildTicketText } from "../../../utils/ticket/ticketBuilder";
 import { printTicket } from "../../../utils/ticketPrinter";
-import { getTicketPrintProfile } from "../../../services/printSettingsService";
+import { getTicketPrintProfile, getSelectedPrinter, getTicketCopies } from "../../../services/printSettingsService";
 import {
   getRewardCartItems,
   getRewardItemPointsPerUnit,
@@ -333,17 +333,14 @@ export const printSaleTicket = async ({
       },
       items: itemsForPrint,
       cashierName,
-      footer: {
-        line1: "Gracias por su compra",
-        line2: "Agenda tu cita de baño",
-        phone: "998 117 5387",
-        returnPolicy: "Para cambios o devoluciones presentar ticket de compra",
-      },
+      footer: customization,
       isReprint: false,
     });
 
     const printResult = await printTicket(ticketText, {
       profile: getTicketPrintProfile(),
+      deviceName: getSelectedPrinter && getSelectedPrinter(),
+      copies: getTicketCopies && getTicketCopies(),
     });
     if (!printResult?.success)
       console.error(
