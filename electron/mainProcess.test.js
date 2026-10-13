@@ -18,7 +18,7 @@ const IPC_CHANNELS = [
   "get-zoom-debug",
   "print-ticket",
   "open-cash-drawer",
-    "get-printers",
+  "get-printers",
 ];
 
 const originalPlatform = process.platform;
@@ -532,8 +532,7 @@ describe("electron mainProcess", () => {
       });
     });
 
-    describe("open-cash-drawer",
-    "get-printers", () => {
+    describe("open-cash-drawer", () => {
       it("confirma la apertura cuando hay impresora conectada", async () => {
         const { handlers } = buildIpcHarness();
         const sender = createWebContents({
@@ -561,6 +560,20 @@ describe("electron mainProcess", () => {
           success: false,
           error: "NO_PRINTER_AVAILABLE",
         });
+      });
+    });
+
+    describe("get-printers", () => {
+      it("devuelve la lista de impresoras conectadas invocando listPrinters", async () => {
+        const { handlers } = buildIpcHarness();
+        const mockPrinters = [{ name: "Epson TM-T20", isDefault: true }];
+        const sender = createWebContents({
+          getPrintersAsync: vi.fn(() => Promise.resolve(mockPrinters)),
+        });
+
+        await expect(handlers["get-printers"]({ sender })).resolves.toEqual(
+          mockPrinters
+        );
       });
     });
   });
