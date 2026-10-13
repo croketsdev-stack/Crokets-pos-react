@@ -6,5 +6,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "jsdom",
+    env: {
+      VITE_SUPABASE_URL: "https://placeholder.supabase.co",
+      VITE_SUPABASE_ANON_KEY: "placeholder-anon-key",
+    },
   },
 });

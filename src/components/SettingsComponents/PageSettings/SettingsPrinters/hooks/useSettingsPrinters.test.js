@@ -16,6 +16,22 @@ vi.mock("../../../../../utils/ticketPrinter", async () => {
   };
 });
 
+vi.mock("../../../../../services/ticketCustomizationService", async () => {
+  const actual = await vi.importActual(
+    "../../../../../services/ticketCustomizationService"
+  );
+  return {
+    ...actual,
+    getTicketCustomization: vi.fn(async () => ({
+      ...actual.DEFAULT_TICKET_CUSTOMIZATION,
+    })),
+    saveTicketCustomization: vi.fn(async ({ template }) => ({
+      ...actual.DEFAULT_TICKET_CUSTOMIZATION,
+      ...template,
+    })),
+  };
+});
+
 describe("useSettingsPrinters", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -159,6 +175,9 @@ describe("useSettingsPrinters", () => {
     const { result } = renderHook(() =>
       useSettingsPrinters({ branchId: null })
     );
+    await act(async () => {
+      await Promise.resolve();
+    });
     await act(async () => {
       result.current.handleTemplateChange(
         "headerSlogan",
