@@ -4,6 +4,9 @@ import BranchEditModal, {
   BRANCH_TIMEZONE_OPTIONS,
   buildBranchForm,
   validateBranchForm,
+  toTitleCase,
+  normalizeAddress,
+  sanitizeBranchForm,
 } from "./BranchEditModal";
 
 const fullBranchProfile = {
@@ -121,6 +124,39 @@ describe("BranchEditModal", () => {
     });
   });
 
+  it("sanea los datos al guardar con valores desordenados", () => {
+    const onSave = vi.fn();
+    renderModal({ onSave });
+
+    fireEvent.change(screen.getByLabelText(/Nombre de sucursal/), {
+      target: { value: "  sucursal  torres   sur  " },
+    });
+    fireEvent.change(screen.getByLabelText(/Ciudad/), {
+      target: { value: "cAnCun" },
+    });
+    fireEvent.change(screen.getByLabelText(/Correo de contacto/), {
+      target: { value: "CONTACTO@SUCURSAL.COM" },
+    });
+    fireEvent.change(screen.getByLabelText(/Teléfono comercial/), {
+      target: { value: "9981234567" },
+    });
+    fireEvent.change(screen.getByLabelText(/Dirección comercial/), {
+      target: { value: "  calle 50   numero 123  " },
+    });
+
+    const saveButton = screen.getByRole("button", { name: "Guardar cambios" });
+    fireEvent.click(saveButton);
+
+    expect(onSave).toHaveBeenCalledWith({
+      name: "Sucursal Torres Sur",
+      city: "Cancun",
+      email: "contacto@sucursal.com",
+      phone: "9981234567",
+      address: "Calle 50 numero 123",
+      timezone: "America/Cancun",
+    });
+  });
+
   it("deshabilita guardar y muestra alertas con datos invalidos", () => {
     renderModal();
 
@@ -175,5 +211,36 @@ describe("buildBranchForm", () => {
       "Desde contexto"
     );
     expect(buildBranchForm(null, {}).timezone).toBe("America/Cancun");
+  });
+});
+
+describe("formatters and sanitizers", () => {
+  it("toTitleCase transforma correctamente", () => {
+    expect(toTitleCase("sUcuRsal tOrRes")).toBe("Sucursal Torres");
+    expect(toTitleCase("SUCURSAL CENTRO NORTE")).toBe("Sucursal Centro Norte");
+    expect(toTitleCase("  plaza   las   americas  ")).toBe("Plaza Las Americas");
+  });
+
+  it("normalizeAddress normaliza la direccion correctamente", () => {
+    expect(normalizeAddress("  av. nichupte   sm 51  ")).toBe("Av. nichupte sm 51");
+  });
+
+  it("sanitizeBranchForm sanea el objeto completo", () => {
+    const form = {
+      name: "  sucursal  torres   sur  ",
+      city: "cAnCun",
+      email: "CONTACTO@SUCURSAL.COM",
+      phone: "998-123-4567",
+      address: "  calle 50   numero 123  ",
+      timezone: "America/Cancun",
+    };
+    expect(sanitizeBranchForm(form)).toEqual({
+      name: "Sucursal Torres Sur",
+      city: "Cancun",
+      email: "contacto@sucursal.com",
+      phone: "9981234567",
+      address: "Calle 50 numero 123",
+      timezone: "America/Cancun",
+    });
   });
 });
