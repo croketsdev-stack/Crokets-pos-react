@@ -1,3 +1,19 @@
+/**
+ * cashOperationSettingsService.js
+ * Configuracion operativa y financiera de caja por sucursal.
+ *
+ * La fuente de verdad remota es public.system_settings con
+ * setting_key 'cash_operation_settings' (value_type 'json', unico por
+ * setting_key + branch_id). En localStorage se conserva un cache local que
+ * funciona como fallback offline y como capa de lectura sincrona para las
+ * vistas criticas de cobro (PaymentModal, alertas de gaveta, apertura de
+ * caja), de modo que la operacion nunca depende de la red.
+ */
+
+import { supabase } from "../lib/supabaseClient";
+
+export const CASH_OPERATION_SETTING_KEY = "cash_operation_settings";
+
 const STORAGE_KEY = "cash_operation_settings";
 
 const DEFAULTS = {
@@ -21,6 +37,27 @@ const DEFAULTS = {
 const ALLOWED_TRIGGERS = ["cash_only", "all_sales"];
 
 const ALLOWED_CONNECTIONS = ["printer_rj11", "manual"];
+
+const SETTING_COLUMNS = `
+          id,
+          setting_key,
+          setting_value,
+          value_type,
+          description,
+          branch_id,
+          is_active,
+          created_at,
+          updated_at
+        `;
+
+const SETTING_DESCRIPTION =
+  "Configuración operativa y financiera de caja por sucursal";
+
+const OFFLINE_LOAD_MESSAGE =
+  "No se pudo sincronizar la configuración de caja; se usaron los valores locales.";
+
+const NO_BRANCH_MESSAGE =
+  "No hay una sucursal activa para sincronizar la configuración de caja.";
 
 function normalizeDrawerTrigger(value) {
   if (typeof value === "string" && value.trim() === "cash_and_movements") {
@@ -67,29 +104,19 @@ function sanitizeString(value, allowed, defaultValue) {
  *
  * Un fondo minimo obligatorio mayor a cero exige capturar efectivo, mientras
  * que con el minimo desactivado o en cero la apertura en cero sigue permitida.
- * Se resuelve aqui para que get y save compartan exactamente la misma regla.
+ * Se resuelve aqui para que get, load y save compartan exactamente la misma regla.
  */
 function deriveAllowZeroOpening(minOpeningCashEnabled, minOpeningCash) {
   if (!minOpeningCashEnabled) return true;
   return minOpeningCash <= 0;
 }
 
-function getStoredSettings() {
-  try {
-    const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw);
-    if (typeof parsed !== "object" || parsed === null) return null;
-    return parsed;
-  } catch (error) {
-    console.error("Error reading cash operation settings:", error);
-    return null;
-  }
-}
-
-export function getCashOperationSettings() {
-  const stored = getStoredSettings();
-  const merged = { ...DEFAULTS, ...(stored || {}) };
+/**
+ * Normaliza cualquier fuente de valores (cache, remoto o parcial del formulario)
+ * a un objeto de configuracion completo, tipado y dentro de sus limites.
+ */
+function sanitizeSettings(raw = {}) {
+  const merged = { ...DEFAULTS, ...raw };
 
   const minOpeningCashEnabled = sanitizeBoolean(
     merged.minOpeningCashEnabled,
@@ -100,18 +127,17 @@ export function getCashOperationSettings() {
     DEFAULTS.minOpeningCash,
     0
   );
-  const allowZeroOpening = deriveAllowZeroOpening(
-    minOpeningCashEnabled,
-    minOpeningCash
-  );
 
-  const settings = {
+  return {
     defaultOpeningCash: sanitizeNumber(
       merged.defaultOpeningCash,
       DEFAULTS.defaultOpeningCash,
       0
     ),
-    allowZeroOpening,
+    allowZeroOpening: deriveAllowZeroOpening(
+      minOpeningCashEnabled,
+      minOpeningCash
+    ),
     maxOpeningCashEnabled: sanitizeBoolean(
       merged.maxOpeningCashEnabled,
       DEFAULTS.maxOpeningCashEnabled
@@ -163,93 +189,75 @@ export function getCashOperationSettings() {
       1
     ),
   };
+}
 
+function readCache() {
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (typeof parsed !== "object" || parsed === null) return null;
+    return parsed;
+  } catch (error) {
+    console.error("Error reading cash operation settings:", error);
+    return null;
+  }
+}
+
+function writeCache(settings) {
+  try {
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    return true;
+  } catch (error) {
+    console.error("Error writing cash operation settings cache:", error);
+    return false;
+  }
+}
+
+function buildLocalResult(extra = {}) {
   return {
     success: true,
-    ...settings,
+    ...getCashOperationSettings(),
+    error: null,
+    source: "cache",
+    ...extra,
+  };
+}
+
+/**
+ * Lectura sincrona desde el cache local.
+ *
+ * Es la capa que consumen las vistas criticas de cobro: siempre responde con
+ * valores saneados, nunca lanza y nunca espera a la red.
+ */
+export function getCashOperationSettings() {
+  return {
+    success: true,
+    ...sanitizeSettings(readCache() || {}),
     error: null,
   };
 }
 
+/**
+ * Escritura sincrona en el cache local.
+ *
+ * Es la primitiva cache-first: el POS guarda primero en la maquina y luego
+ * el flujo remoto (persistCashOperationSettings) sincroniza con la sucursal.
+ */
 export function saveCashOperationSettings(partialSettings = {}) {
   try {
-    const current = getCashOperationSettings();
-    const next = { ...current, ...partialSettings };
+    const toStore = sanitizeSettings({
+      ...getCashOperationSettings(),
+      ...partialSettings,
+    });
 
-    const minOpeningCashEnabled = sanitizeBoolean(
-      next.minOpeningCashEnabled,
-      DEFAULTS.minOpeningCashEnabled
-    );
-    const minOpeningCash = sanitizeNumber(
-      next.minOpeningCash,
-      DEFAULTS.minOpeningCash,
-      0
-    );
-    const allowZeroOpening = deriveAllowZeroOpening(
-      minOpeningCashEnabled,
-      minOpeningCash
-    );
-
-    const toStore = {
-      defaultOpeningCash: sanitizeNumber(
-        next.defaultOpeningCash,
-        DEFAULTS.defaultOpeningCash,
-        0
-      ),
-      allowZeroOpening,
-      maxOpeningCashEnabled: sanitizeBoolean(
-        next.maxOpeningCashEnabled,
-        DEFAULTS.maxOpeningCashEnabled
-      ),
-      minOpeningCashEnabled,
-      minOpeningCash,
-      drawerCashLimit: sanitizeNumber(
-        next.drawerCashLimit,
-        DEFAULTS.drawerCashLimit,
-        0
-      ),
-      drawerAlertEnabled: sanitizeBoolean(
-        next.drawerAlertEnabled,
-        DEFAULTS.drawerAlertEnabled
-      ),
-      requireExitReason: sanitizeBoolean(
-        next.requireExitReason,
-        DEFAULTS.requireExitReason
-      ),
-      blindCountCut: sanitizeBoolean(
-        next.blindCountCut,
-        DEFAULTS.blindCountCut
-      ),
-      requireCutDifferenceNote: sanitizeBoolean(
-        next.requireCutDifferenceNote,
-        DEFAULTS.requireCutDifferenceNote
-      ),
-      cashDrawerEnabled: sanitizeBoolean(
-        next.cashDrawerEnabled,
-        DEFAULTS.cashDrawerEnabled
-      ),
-      cashDrawerTrigger: sanitizeString(
-        normalizeDrawerTrigger(next.cashDrawerTrigger),
-        ALLOWED_TRIGGERS,
-        DEFAULTS.cashDrawerTrigger
-      ),
-      cashDrawerConnection: sanitizeString(
-        next.cashDrawerConnection,
-        ALLOWED_CONNECTIONS,
-        DEFAULTS.cashDrawerConnection
-      ),
-      acceptUsdPayments: sanitizeBoolean(
-        next.acceptUsdPayments,
-        DEFAULTS.acceptUsdPayments
-      ),
-      defaultExchangeRate: sanitizeNumber(
-        next.defaultExchangeRate,
-        DEFAULTS.defaultExchangeRate,
-        1
-      ),
-    };
-
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
+    const stored = writeCache(toStore);
+    if (!stored) {
+      return {
+        success: false,
+        error: "No se pudo escribir la configuración local de caja.",
+      };
+    }
 
     return {
       success: true,
@@ -261,6 +269,184 @@ export function saveCashOperationSettings(partialSettings = {}) {
     return {
       success: false,
       error: error.message || "Error saving cash operation settings",
+    };
+  }
+}
+
+function parseRemoteValue(settingValue) {
+  if (typeof settingValue !== "string" || settingValue.trim() === "") {
+    return null;
+  }
+  try {
+    const parsed = JSON.parse(settingValue);
+    if (typeof parsed !== "object" || parsed === null) return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Hidratacion remota de la configuracion de una sucursal.
+ *
+ * Consulta system_settings y refresca el cache local para que todos los
+ * consumidores sincronos vean los valores de la sucursal. Si Supabase falla,
+ * responde con el cache (fallback offline) y lo indica en `error` y en
+ * `source: "cache"`; si aun no existe registro remoto, conserva la
+ * configuracion local para migrarla en el primer guardado.
+ */
+export async function loadCashOperationSettings({ branchId = null } = {}) {
+  if (!branchId) {
+    return buildLocalResult();
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from("system_settings")
+      .select(SETTING_COLUMNS)
+      .eq("setting_key", CASH_OPERATION_SETTING_KEY)
+      .eq("branch_id", branchId)
+      .eq("is_active", true)
+      .limit(1)
+      .maybeSingle();
+
+    if (error) {
+      console.error(
+        "Error loading cash operation settings from Supabase:",
+        error
+      );
+      return buildLocalResult({ error: OFFLINE_LOAD_MESSAGE });
+    }
+
+    if (!data?.setting_value) {
+      return buildLocalResult();
+    }
+
+    const parsed = parseRemoteValue(data.setting_value);
+    if (!parsed) {
+      console.error(
+        "Invalid cash operation settings payload from Supabase:",
+        CASH_OPERATION_SETTING_KEY
+      );
+      return buildLocalResult({ error: OFFLINE_LOAD_MESSAGE });
+    }
+
+    const settings = sanitizeSettings(parsed);
+    writeCache(settings);
+
+    return {
+      success: true,
+      ...settings,
+      error: null,
+      source: "remote",
+    };
+  } catch (error) {
+    console.error("Error loading cash operation settings:", error);
+    return buildLocalResult({ error: OFFLINE_LOAD_MESSAGE });
+  }
+}
+
+/**
+ * Persistencia de la configuracion de la sucursal.
+ *
+ * Orden cache-first: primero escribe el cache local (garantizando que la
+ * apertura y el cobro sigan operando sin red) y despues sincroniza el
+ * registro en system_settings (update si ya existe, insert si no).
+ *
+ * Si la sincronizacion remota falla, devuelve `success: true` con
+ * `partial: true` y `synced: false` para que la interfaz reporte que los
+ * cambios quedaron en esta maquina pero no en la sucursal.
+ */
+export async function persistCashOperationSettings({
+  branchId = null,
+  settings = {},
+} = {}) {
+  const localResult = saveCashOperationSettings(settings);
+  if (!localResult.success) {
+    return {
+      success: false,
+      partial: false,
+      synced: false,
+      error:
+        localResult.error || "No se pudo guardar la configuración de caja.",
+    };
+  }
+
+  const merged = sanitizeSettings(localResult);
+
+  if (!branchId) {
+    return {
+      success: false,
+      partial: false,
+      synced: false,
+      ...merged,
+      error: NO_BRANCH_MESSAGE,
+    };
+  }
+
+  try {
+    const settingValue = JSON.stringify(merged);
+    const now = new Date().toISOString();
+
+    const { data: existing, error: existingError } = await supabase
+      .from("system_settings")
+      .select("id")
+      .eq("setting_key", CASH_OPERATION_SETTING_KEY)
+      .eq("branch_id", branchId)
+      .eq("is_active", true)
+      .limit(1)
+      .maybeSingle();
+
+    if (existingError) throw existingError;
+
+    if (existing?.id) {
+      const { error: updateError } = await supabase
+        .from("system_settings")
+        .update({
+          setting_value: settingValue,
+          value_type: "json",
+          description: SETTING_DESCRIPTION,
+          is_active: true,
+          updated_at: now,
+        })
+        .eq("id", existing.id);
+
+      if (updateError) throw updateError;
+    } else {
+      const { error: insertError } = await supabase
+        .from("system_settings")
+        .insert([
+          {
+            id: crypto.randomUUID(),
+            setting_key: CASH_OPERATION_SETTING_KEY,
+            setting_value: settingValue,
+            value_type: "json",
+            description: SETTING_DESCRIPTION,
+            branch_id: branchId,
+            is_active: true,
+            created_at: now,
+            updated_at: now,
+          },
+        ]);
+
+      if (insertError) throw insertError;
+    }
+
+    return {
+      success: true,
+      partial: false,
+      synced: true,
+      ...merged,
+      error: null,
+    };
+  } catch (error) {
+    console.error("Error persisting cash operation settings:", error);
+    return {
+      success: true,
+      partial: true,
+      synced: false,
+      ...merged,
+      error: error.message || "No se pudo sincronizar con la sucursal.",
     };
   }
 }
