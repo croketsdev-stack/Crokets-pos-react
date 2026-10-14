@@ -143,7 +143,7 @@ describe("SettingsPrinters", () => {
   it("muestra los distintivos de alcance de sucursal y de equipo", () => {
     render(<SettingsPrinters />);
 
-    expect(screen.getAllByText(/Aplica a toda la sucursal/i)).toHaveLength(1);
+    expect(screen.getAllByText(/Aplica a nivel global/i)).toHaveLength(1);
     expect(screen.getAllByText(/Solo este equipo/i)).toHaveLength(3);
   });
 });

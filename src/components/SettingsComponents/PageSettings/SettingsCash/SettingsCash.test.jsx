@@ -195,9 +195,7 @@ describe("SettingsCash", () => {
 
     render(<SettingsCash />);
 
-    const branchBadges = await screen.findAllByText(
-      /Aplica a toda la sucursal/i
-    );
+    const branchBadges = await screen.findAllByText(/Aplica a nivel global/i);
     expect(branchBadges).toHaveLength(5);
     expect(screen.queryByText(/Solo este equipo/i)).toBeNull();
   });

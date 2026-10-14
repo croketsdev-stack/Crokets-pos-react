@@ -197,9 +197,7 @@ describe("SettingsTerminal", () => {
   it("muestra los distintivos de alcance de sucursal, equipo y estado", async () => {
     render(<SettingsTerminal />);
 
-    const branchBadges = await screen.findAllByText(
-      /Aplica a toda la sucursal/i
-    );
+    const branchBadges = await screen.findAllByText(/Aplica a nivel global/i);
     expect(branchBadges).toHaveLength(1);
     expect(screen.getAllByText(/Solo este equipo/i)).toHaveLength(2);
     expect(screen.getByText(/Estado del sistema/i)).toBeTruthy();
