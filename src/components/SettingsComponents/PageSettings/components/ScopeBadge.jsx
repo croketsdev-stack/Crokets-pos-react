@@ -2,8 +2,8 @@ import styles from "./ScopeBadge.module.css";
 
 const SCOPE_CONFIG = {
   branch: {
-    label: "Aplica a toda la sucursal",
-    hint: "Configuración sincronizada en la nube para todas las cajas de la tienda.",
+    label: "Aplica a nivel global",
+    hint: "Configuración sincronizada en la nube a nivel global/sucursal.",
     variantClass: styles.branch,
   },
   device: {
