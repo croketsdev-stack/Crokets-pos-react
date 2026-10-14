@@ -189,4 +189,16 @@ describe("SettingsCash", () => {
       true
     );
   });
+
+  it("muestra el distintivo de alcance de sucursal en cada tarjeta", async () => {
+    checkUserIsAdmin.mockResolvedValue(true);
+
+    render(<SettingsCash />);
+
+    const branchBadges = await screen.findAllByText(
+      /Aplica a toda la sucursal/i
+    );
+    expect(branchBadges).toHaveLength(5);
+    expect(screen.queryByText(/Solo este equipo/i)).toBeNull();
+  });
 });
