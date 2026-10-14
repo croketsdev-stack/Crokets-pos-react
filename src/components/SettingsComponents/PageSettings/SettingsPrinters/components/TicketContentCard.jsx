@@ -1,4 +1,5 @@
 import styles from "../SettingsPrinters.module.css";
+import ScopeBadge from "../../components/ScopeBadge";
 import checkIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
 import warningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
 
@@ -12,7 +13,10 @@ const TicketContentCard = ({
   templateFeedback,
 }) => (
   <article className={styles.card}>
-    <h2 className={styles.cardTitle}>Plantilla comercial del ticket</h2>
+    <div className={styles.cardTitleRow}>
+      <h2 className={styles.cardTitle}>Plantilla comercial del ticket</h2>
+      <ScopeBadge scope="branch" />
+    </div>
     <p className={styles.cardDescription}>
       Personaliza encabezado, pie de página y políticas. Se guarda por sucursal.
     </p>

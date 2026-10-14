@@ -64,6 +64,8 @@ y el proceso principal de Electron:
 | Guard de rutas                                      | `src/components/ProtectedRoute/ProtectedRoute.test.jsx`                            |
 | Sucursal por dispositivo (RPC)                      | `src/services/deviceBranchService.test.js`                                         |
 | Caja: sesión y apertura (RPC)                       | `src/services/cashRegisterService.test.js`                                         |
+| Caja: configuración operativa (remoto y offline)    | `src/services/cashOperationSettingsService.test.js`                                |
+| Caja: configuración operativa (hook y vista)        | `.../PageSettings/SettingsCash/SettingsCash.test.jsx`                              |
 | Ticket: golden de salida                            | `src/utils/ticket/ticketBuilder.test.js`                                           |
 | Ticket: primitivas de layout                        | `src/utils/ticket/ticketLayoutFormatters.test.js`                                  |
 | Ticket: formateadores de fecha                      | `src/utils/ticket/ticketDateFormatters.test.js`                                    |

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import SettingsCash from "./SettingsCash";
 
 const { checkUserIsAdmin } = vi.hoisted(() => ({
@@ -20,28 +20,99 @@ vi.mock("../../../../pages/Settings/services/cashSettingsService", () => ({
   updateCashMaxOpeningAmount,
 }));
 
+const {
+  getCashOperationSettings,
+  loadCashOperationSettings,
+  persistCashOperationSettings,
+  triggerCashDrawerKick,
+} = vi.hoisted(() => ({
+  getCashOperationSettings: vi.fn(),
+  loadCashOperationSettings: vi.fn(),
+  persistCashOperationSettings: vi.fn(),
+  triggerCashDrawerKick: vi.fn(),
+}));
+
+vi.mock("../../../../services/cashOperationSettingsService", () => ({
+  getCashOperationSettings,
+  loadCashOperationSettings,
+  persistCashOperationSettings,
+  triggerCashDrawerKick,
+}));
+
 const { useAuth } = vi.hoisted(() => ({ useAuth: vi.fn() }));
 
 vi.mock("../../../../contexts/AuthContext", () => ({ useAuth }));
+
+const { useBranch } = vi.hoisted(() => ({ useBranch: vi.fn() }));
+
+vi.mock("../../../../contexts/BranchContext", () => ({ useBranch }));
+
+const baseSettings = {
+  defaultOpeningCash: 0,
+  allowZeroOpening: true,
+  maxOpeningCashEnabled: true,
+  minOpeningCashEnabled: false,
+  minOpeningCash: 0,
+  drawerCashLimit: 0,
+  drawerAlertEnabled: false,
+  requireExitReason: true,
+  blindCountCut: false,
+  requireCutDifferenceNote: true,
+  cashDrawerEnabled: false,
+  cashDrawerTrigger: "cash_only",
+  cashDrawerConnection: "printer_rj11",
+  acceptUsdPayments: true,
+  defaultExchangeRate: 18.5,
+};
 
 describe("SettingsCash", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     useAuth.mockReturnValue({ user: { id: "user-1" } });
+    useBranch.mockReturnValue({ branch: { id: "branch-1" } });
+    getCashOperationSettings.mockReturnValue({
+      success: true,
+      ...baseSettings,
+    });
+    loadCashOperationSettings.mockResolvedValue({
+      success: true,
+      ...baseSettings,
+      error: null,
+      source: "cache",
+    });
+    persistCashOperationSettings.mockResolvedValue({
+      success: true,
+      partial: false,
+      synced: true,
+      ...baseSettings,
+      error: null,
+    });
   });
 
-  it("carga y muestra el tope de apertura para administradores", async () => {
+  it("hidrata la configuracion desde la sucursal activa", async () => {
     checkUserIsAdmin.mockResolvedValue(true);
     getCashMaxOpeningAmount.mockResolvedValue({
       success: true,
       amount: 5000,
       error: null,
     });
+    loadCashOperationSettings.mockResolvedValue({
+      success: true,
+      ...baseSettings,
+      defaultOpeningCash: 320,
+      error: null,
+      source: "remote",
+    });
 
     render(<SettingsCash />);
 
     const input = await screen.findByLabelText("Monto máximo");
     expect(input.value).toBe("5000");
+    expect(loadCashOperationSettings).toHaveBeenCalledWith({
+      branchId: "branch-1",
+    });
+    await screen.findByDisplayValue("320");
+    expect(document.getElementById("default-opening-cash").value).toBe("320");
   });
 
   it("guarda el tope y anuncia el éxito con role=status", async () => {
@@ -60,8 +131,10 @@ describe("SettingsCash", () => {
     render(<SettingsCash />);
 
     const input = await screen.findByLabelText("Monto máximo");
+    const saveButton = screen.getByRole("button", { name: /Guardar/i });
+    await waitFor(() => expect(saveButton.disabled).toBe(false));
     fireEvent.change(input, { target: { value: "2500" } });
-    fireEvent.click(screen.getByRole("button", { name: /Guardar/i }));
+    fireEvent.click(saveButton);
 
     const status = await screen.findByRole("status");
     expect(status.textContent).toContain(
@@ -69,6 +142,9 @@ describe("SettingsCash", () => {
     );
     expect(updateCashMaxOpeningAmount).toHaveBeenCalledWith("2500");
     expect(input.value).toBe("2500");
+    expect(persistCashOperationSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ branchId: "branch-1" })
+    );
   });
 
   it("anuncia el error del servicio con role=alert", async () => {
@@ -87,7 +163,9 @@ describe("SettingsCash", () => {
     render(<SettingsCash />);
 
     await screen.findByLabelText("Monto máximo");
-    fireEvent.click(screen.getByRole("button", { name: /Guardar/i }));
+    const saveButton = screen.getByRole("button", { name: /Guardar/i });
+    await waitFor(() => expect(saveButton.disabled).toBe(false));
+    fireEvent.click(saveButton);
 
     const alert = await screen.findByRole("alert");
     expect(alert.textContent).toContain(
@@ -107,5 +185,18 @@ describe("SettingsCash", () => {
     ).toBeTruthy();
     expect(screen.queryByLabelText("Monto máximo")).toBeNull();
     expect(getCashMaxOpeningAmount).not.toHaveBeenCalled();
+    expect(screen.getByRole("button", { name: /Guardar/i }).disabled).toBe(
+      true
+    );
+  });
+
+  it("muestra el distintivo de alcance de sucursal en cada tarjeta", async () => {
+    checkUserIsAdmin.mockResolvedValue(true);
+
+    render(<SettingsCash />);
+
+    const branchBadges = await screen.findAllByText(/Aplica a nivel global/i);
+    expect(branchBadges).toHaveLength(5);
+    expect(screen.queryByText(/Solo este equipo/i)).toBeNull();
   });
 });

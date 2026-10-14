@@ -1,4 +1,5 @@
 import styles from "../SettingsPrinters.module.css";
+import ScopeBadge from "../../components/ScopeBadge";
 import { TICKET_WIDTH_OPTIONS } from "../../../../../services/printSettingsService";
 import checkIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
 import warningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
@@ -15,7 +16,10 @@ const TicketFormatCard = ({
   preferencesFeedback,
 }) => (
   <article className={styles.card}>
-    <h2 className={styles.cardTitle}>Formato y preferencias</h2>
+    <div className={styles.cardTitleRow}>
+      <h2 className={styles.cardTitle}>Formato y preferencias</h2>
+      <ScopeBadge scope="device" />
+    </div>
     <p className={styles.cardDescription}>
       Configura el ancho, copias, modo de impresión y saltos de línea.
     </p>

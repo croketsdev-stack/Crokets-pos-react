@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import storeIcon from "../../../../../assets/icons/store-solid-full.svg";
+import ScopeBadge from "../../components/ScopeBadge";
 import styles from "../SettingsTerminal.module.css";
 
 const BranchInfoCard = ({ branch, branchProfile, isAdmin, onEdit }) => {
@@ -36,15 +37,18 @@ const BranchInfoCard = ({ branch, branchProfile, isAdmin, onEdit }) => {
               </p>
             </div>
           </div>
-          {isAdmin && (
-            <button
-              type="button"
-              className={`${styles.buttonSecondary} ${styles.headerAction}`}
-              onClick={onEdit}
-            >
-              Editar datos
-            </button>
-          )}
+          <div className={styles.cardHeaderActions}>
+            <ScopeBadge scope="branch" />
+            {isAdmin && (
+              <button
+                type="button"
+                className={`${styles.buttonSecondary} ${styles.headerAction}`}
+                onClick={onEdit}
+              >
+                Editar datos
+              </button>
+            )}
+          </div>
         </div>
       </header>
 

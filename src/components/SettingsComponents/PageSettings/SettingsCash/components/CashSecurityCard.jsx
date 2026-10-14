@@ -1,13 +1,17 @@
 import React from "react";
 import styles from "../SettingsCash.module.css";
+import ScopeBadge from "../../components/ScopeBadge";
 import MonetaryInput from "./MonetaryInput";
 import ToggleSwitch from "./ToggleSwitch";
 
 const CashSecurityCard = ({ settings, onSettingChange }) => (
   <article className={styles.card}>
-    <h2 className={styles.cardTitle}>
-      Control de Efectivo y Seguridad en Turno
-    </h2>
+    <div className={styles.cardTitleRow}>
+      <h2 className={styles.cardTitle}>
+        Control de Efectivo y Seguridad en Turno
+      </h2>
+      <ScopeBadge scope="branch" />
+    </div>
     <p className={styles.cardDescription}>
       Reglas para prevenir retiros excesivos y exigir justificación en salidas.
     </p>

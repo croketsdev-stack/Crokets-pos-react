@@ -7,28 +7,31 @@ import {
   updateCashMaxOpeningAmount,
 } from "../../../../../pages/Settings/services/cashSettingsService";
 import {
-  DEFAULT_CASH_OPERATION_SETTINGS,
   getCashOperationSettings,
-  saveCashOperationSettings,
+  loadCashOperationSettings,
+  persistCashOperationSettings,
   triggerCashDrawerKick,
 } from "../../../../../services/cashOperationSettingsService";
 
 /**
  * Estado y ciclo de vida de la configuracion de caja.
  *
- * Concentra la carga (lectura de `getCashOperationSettings` y del tope de
- * apertura via RPC), el guardado y la prueba del cajon, de modo que la vista
- * solo orqueste tarjetas y feedback.
+ * Hidrata primero desde la cache local (lectura sincrona, sin red) y despues
+ * desde `system_settings` de la sucursal (`branchId`), guarda de forma
+ * asincrona con estrategia cache-first y prueba el cajon. La persistencia
+ * afecta a toda la sucursal, por lo que solo los administradores pueden
+ * guardar cambios.
  */
-const useSettingsCash = () => {
+const useSettingsCash = ({ branchId = null } = {}) => {
   const { user } = useAuth();
 
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminLoading, setAdminLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [cashMax, setCashMax] = useState("");
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState(null);
-  const [settings, setSettings] = useState(DEFAULT_CASH_OPERATION_SETTINGS);
+  const [settings, setSettings] = useState(() => getCashOperationSettings());
   const [testingDrawer, setTestingDrawer] = useState(false);
   const [drawerFeedback, setDrawerFeedback] = useState(null);
 
@@ -42,10 +45,17 @@ const useSettingsCash = () => {
 
       setIsAdmin(admin);
       setAdminLoading(false);
+      setSettings(getCashOperationSettings());
 
-      const ops = getCashOperationSettings();
-      if (mounted) {
-        setSettings(ops);
+      const resOps = await loadCashOperationSettings({ branchId });
+
+      if (!mounted) return;
+
+      setSettings(resOps);
+      setLoading(false);
+
+      if (resOps.error) {
+        setFeedback({ type: "error", message: resOps.error });
       }
 
       if (!admin) return;
@@ -66,7 +76,7 @@ const useSettingsCash = () => {
     return () => {
       mounted = false;
     };
-  }, [user?.id]);
+  }, [user?.id, branchId]);
 
   const handleSettingChange = (key, value) => {
     setSettings((prev) => ({ ...prev, [key]: value }));
@@ -79,30 +89,52 @@ const useSettingsCash = () => {
   const handleSave = async () => {
     setDrawerFeedback(null);
     setFeedback(null);
+
+    if (!isAdmin) {
+      setFeedback({
+        type: "error",
+        message:
+          "Se requiere un perfil de administrador para guardar la configuración de la sucursal.",
+      });
+      return;
+    }
+
     setSaving(true);
 
     let consolidatedMessage = null;
 
     try {
-      if (isAdmin) {
-        const cashMaxValue = settings.maxOpeningCashEnabled
-          ? cashMax
-          : "1000000";
-        const resCashMax = await updateCashMaxOpeningAmount(cashMaxValue);
-        if (!resCashMax.success) {
-          setFeedback({ type: "error", message: resCashMax.error });
-          return;
-        }
-        setCashMax(String(resCashMax.amount));
-        consolidatedMessage = "Tope de apertura de caja actualizado.";
+      const cashMaxValue = settings.maxOpeningCashEnabled ? cashMax : "1000000";
+      const resCashMax = await updateCashMaxOpeningAmount(cashMaxValue);
+      if (!resCashMax.success) {
+        setFeedback({ type: "error", message: resCashMax.error });
+        return;
       }
+      setCashMax(String(resCashMax.amount));
+      consolidatedMessage = "Tope de apertura de caja actualizado.";
 
-      const resSettings = saveCashOperationSettings(settings);
+      const resSettings = await persistCashOperationSettings({
+        branchId,
+        settings,
+      });
+
       if (!resSettings.success) {
         setFeedback({ type: "error", message: resSettings.error });
         return;
       }
+
       setSettings((prev) => ({ ...prev, ...resSettings }));
+
+      if (resSettings.partial) {
+        setFeedback({
+          type: "error",
+          message:
+            `Configuración guardada solo en esta máquina; no se sincronizó con la sucursal. ${
+              resSettings.error || ""
+            }`.trim(),
+        });
+        return;
+      }
 
       const message = consolidatedMessage
         ? `${consolidatedMessage} Configuración de caja y operación guardada.`
@@ -135,6 +167,7 @@ const useSettingsCash = () => {
     handleSettingChange,
     handleTestDrawer,
     isAdmin,
+    loading,
     saving,
     settings,
     testingDrawer,

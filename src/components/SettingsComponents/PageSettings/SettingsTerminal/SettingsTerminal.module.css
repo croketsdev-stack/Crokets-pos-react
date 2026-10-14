@@ -122,6 +122,13 @@
     brightness(95%) contrast(92%);
 }
 
+.cardHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
 .headerAction {
   flex-shrink: 0;
 }

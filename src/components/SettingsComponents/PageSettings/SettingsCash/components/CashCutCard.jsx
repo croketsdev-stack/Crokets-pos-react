@@ -1,10 +1,14 @@
 import React from "react";
 import styles from "../SettingsCash.module.css";
+import ScopeBadge from "../../components/ScopeBadge";
 import ToggleSwitch from "./ToggleSwitch";
 
 const CashCutCard = ({ settings, onSettingChange }) => (
   <article className={styles.card}>
-    <h2 className={styles.cardTitle}>Políticas de Corte y Arqueo de Turno</h2>
+    <div className={styles.cardTitleRow}>
+      <h2 className={styles.cardTitle}>Políticas de Corte y Arqueo de Turno</h2>
+      <ScopeBadge scope="branch" />
+    </div>
     <p className={styles.cardDescription}>
       Configuración para el arqueo y control de descuadres.
     </p>

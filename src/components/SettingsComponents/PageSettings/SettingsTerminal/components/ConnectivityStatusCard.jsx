@@ -1,6 +1,7 @@
 import rotateIcon from "../../../../../assets/icons/rotate-solid-full.svg";
 import checkIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
 import warningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
+import ScopeBadge from "../../components/ScopeBadge";
 import styles from "../SettingsTerminal.module.css";
 import {
   formatMilliseconds,
@@ -82,6 +83,7 @@ const ConnectivityStatusCard = ({
               </p>
             </div>
           </div>
+          <ScopeBadge scope="status" />
         </div>
       </header>
 

@@ -1,5 +1,6 @@
 import displayIcon from "../../../../../assets/icons/display-solid-full.svg";
 import warningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
+import ScopeBadge from "../../components/ScopeBadge";
 import styles from "../SettingsTerminal.module.css";
 import { formatResolution, formatDpr } from "../utils/terminalFormatters";
 
@@ -34,6 +35,7 @@ const DisplaySettingsCard = ({
               </p>
             </div>
           </div>
+          <ScopeBadge scope="device" />
         </div>
       </header>
 
