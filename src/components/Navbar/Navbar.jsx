@@ -88,7 +88,6 @@ const Navbar = () => {
   const { user, lockScreen } = useAuth();
   const { branch } = useBranch();
 
-  // Inyectamos la lógica separada para atajos (F1, F2, etc.)
   useKeyboardShortcuts(NAV_ITEMS);
 
   const [appModal, setAppModal] = useState({

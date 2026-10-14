@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { supabase } from "../../../../../lib/supabaseClient";
 import { useDidChange } from "../../../../../hooks/useDidChange";
+import { fetchOtherBranchStocks } from "../services/inventoryBranchStocksDetailService";
 
 const useInventoryBranchDetails = (selectedBranchId) => {
   const [expandedProductId, setExpandedProductId] = useState(null);
@@ -49,60 +49,10 @@ const useInventoryBranchDetails = (selectedBranchId) => {
     }));
 
     try {
-      const selectCandidates = [
-        `
-          id,
-          branch_id,
-          stock,
-          min_stock,
-          max_stock,
-          is_active,
-          branches:branch_id(
-            id,
-            name,
-            code
-          )
-        `,
-        `
-          id,
-          branch_id,
-          stock,
-          min_stock,
-          max_stock,
-          is_active,
-          branches(
-            id,
-            name,
-            code
-          )
-        `,
-      ];
-
-      let detailRows = [];
-      let lastError = null;
-
-      for (const selectClause of selectCandidates) {
-        const result = await supabase
-          .from("branch_inventory")
-          .select(selectClause)
-          .eq("product_id", productId)
-          .neq("branch_id", selectedBranchId)
-          .eq("is_active", true)
-          .order("created_at", { ascending: false });
-
-        if (result.error) {
-          lastError = result.error;
-          continue;
-        }
-
-        detailRows = result.data ?? [];
-        lastError = null;
-        break;
-      }
-
-      if (lastError) {
-        throw lastError;
-      }
+      const detailRows = await fetchOtherBranchStocks({
+        productId,
+        selectedBranchId,
+      });
 
       setOtherStocksByProduct((previous) => ({
         ...previous,

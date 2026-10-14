@@ -1,0 +1,283 @@
+import { describe, it, expect } from "vitest";
+
+import {
+  hydrateBaseMovements,
+  hydrateMissingRedemptions,
+} from "./movementReportBuilder";
+
+const buildDeps = () => ({
+  productsById: new Map([["p1", { id: "p1", name: "Croquetas" }]]),
+  usersById: new Map([["u1", { id: "u1", username: "admin" }]]),
+  salesById: new Map([
+    [
+      "s1",
+      {
+        id: "s1",
+        sale_date: "2026-10-01T10:00:00Z",
+        ticket_number: "TCK-1234",
+      },
+    ],
+  ]),
+  rewardsById: new Map([["r1", { id: "r1", name: "Premio Lealtad" }]]),
+});
+
+describe("movementReportBuilder", () => {
+  describe("hydrateBaseMovements", () => {
+    it("hidrata filas base con producto, usuario y venta", () => {
+      const deps = buildDeps();
+      const baseRows = [
+        {
+          id: "m1",
+          product_id: "p1",
+          user_id: "u1",
+          sale_id: "s1",
+          movement_type: "sale",
+          quantity: -2,
+          reason: "Venta mostrador",
+          created_at: "2026-10-01T10:00:00Z",
+        },
+      ];
+
+      const result = hydrateBaseMovements({
+        baseRows,
+        rewardRows: [],
+        ...deps,
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].products).toEqual({ id: "p1", name: "Croquetas" });
+      expect(result[0].users).toEqual({ id: "u1", username: "admin" });
+      expect(result[0].sales.id).toBe("s1");
+      expect(result[0].row_key).toBe("movement-m1");
+      expect(result[0].report_sort_at).toBe("2026-10-01T10:00:00Z");
+    });
+
+    it("construye row_key con product_id y created_at si no hay id", () => {
+      const deps = buildDeps();
+      const baseRows = [
+        {
+          product_id: "p1",
+          created_at: "2026-10-01T10:00:00Z",
+          movement_type: "adjustment",
+        },
+      ];
+
+      const result = hydrateBaseMovements({
+        baseRows,
+        rewardRows: [],
+        ...deps,
+      });
+
+      expect(result[0].row_key).toBe("movement-p1-2026-10-01T10:00:00Z");
+    });
+
+    it("marca has_sale_redemption si la venta tiene canje asociado", () => {
+      const deps = buildDeps();
+      const baseRows = [
+        {
+          id: "m1",
+          product_id: "p1",
+          sale_id: "s1",
+          movement_type: "sale",
+          quantity: -1,
+        },
+      ];
+      const rewardRows = [
+        { sale_id: "s1", product_id: "p1", reward_id: "r1", quantity: 1 },
+      ];
+
+      const result = hydrateBaseMovements({
+        baseRows,
+        rewardRows,
+        ...deps,
+      });
+
+      expect(result[0].has_sale_redemption).toBe(true);
+    });
+
+    it("reemplaza reason por redemption reason si hay canje y es venta", () => {
+      const deps = buildDeps();
+      const baseRows = [
+        {
+          id: "m1",
+          product_id: "p1",
+          sale_id: "s1",
+          movement_type: "sale",
+          quantity: -1,
+          reason: "Venta mostrador",
+        },
+      ];
+      const rewardRows = [
+        {
+          sale_id: "s1",
+          product_id: "p1",
+          reward_id: "r1",
+          points_used: 100,
+          quantity: 1,
+        },
+      ];
+
+      const result = hydrateBaseMovements({
+        baseRows,
+        rewardRows,
+        ...deps,
+      });
+
+      expect(result[0].reason).toBe("redemption: Premio Lealtad - 100 PTS");
+    });
+
+    it("mantiene reason original si no hay canje asociado", () => {
+      const deps = buildDeps();
+      const baseRows = [
+        {
+          id: "m1",
+          product_id: "p1",
+          movement_type: "adjustment",
+          quantity: 5,
+          reason: "Ajuste inventario",
+        },
+      ];
+
+      const result = hydrateBaseMovements({
+        baseRows,
+        rewardRows: [],
+        ...deps,
+      });
+
+      expect(result[0].reason).toBe("Ajuste inventario");
+    });
+  });
+
+  describe("hydrateMissingRedemptions", () => {
+    it("genera filas de redención para canjes sin venta asociada en base", () => {
+      const deps = buildDeps();
+      const rewardRows = [
+        {
+          id: "rd1",
+          sale_id: "s99",
+          product_id: "p1",
+          reward_id: "r1",
+          user_id: "u1",
+          quantity: 1,
+          points_used: 50,
+          created_at: "2026-10-02T12:00:00Z",
+        },
+      ];
+
+      const result = hydrateMissingRedemptions({
+        baseRows: [],
+        rewardRows,
+        ...deps,
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].movement_type).toBe("redemption");
+      expect(result[0].quantity).toBe(-1);
+      expect(result[0].row_key).toBe("redemption-rd1");
+      expect(result[0].reason).toBe("redemption: Premio Lealtad - 50 PTS");
+      expect(result[0].previous_stock).toBeNull();
+      expect(result[0].new_stock).toBeNull();
+    });
+
+    it("omite canjes que ya tienen venta+producto en baseRows", () => {
+      const deps = buildDeps();
+      const baseRows = [
+        {
+          id: "m1",
+          sale_id: "s1",
+          product_id: "p1",
+          movement_type: "sale",
+        },
+      ];
+      const rewardRows = [
+        {
+          id: "rd1",
+          sale_id: "s1",
+          product_id: "p1",
+          reward_id: "r1",
+          quantity: 1,
+        },
+        {
+          id: "rd2",
+          sale_id: "s1",
+          product_id: "p99",
+          reward_id: "r1",
+          quantity: 2,
+        },
+      ];
+
+      const result = hydrateMissingRedemptions({
+        baseRows,
+        rewardRows,
+        ...deps,
+      });
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe("rd2");
+    });
+
+    it("retorna cantidad negativa para cualquier quantity valido", () => {
+      const deps = buildDeps();
+      const rewardRows = [
+        {
+          id: "rd1",
+          sale_id: "s99",
+          product_id: "p1",
+          reward_id: "r1",
+          quantity: 3,
+        },
+      ];
+
+      const result = hydrateMissingRedemptions({
+        baseRows: [],
+        rewardRows,
+        ...deps,
+      });
+
+      expect(result[0].quantity).toBe(-3);
+    });
+
+    it("retorna -1 si quantity es 0 o no numerico", () => {
+      const deps = buildDeps();
+      const rewardRows = [
+        {
+          id: "rd1",
+          sale_id: "s99",
+          product_id: "p1",
+          reward_id: "r1",
+          quantity: 0,
+        },
+      ];
+
+      const result = hydrateMissingRedemptions({
+        baseRows: [],
+        rewardRows,
+        ...deps,
+      });
+
+      expect(result[0].quantity).toBe(-1);
+    });
+
+    it("usa display_product_name con rewardLabel si no hay producto", () => {
+      const deps = buildDeps();
+      deps.productsById = new Map();
+      const rewardRows = [
+        {
+          id: "rd1",
+          sale_id: "s99",
+          product_id: "p-inexistente",
+          reward_id: "r1",
+          quantity: 1,
+        },
+      ];
+
+      const result = hydrateMissingRedemptions({
+        baseRows: [],
+        rewardRows,
+        ...deps,
+      });
+
+      expect(result[0].display_product_name).toBe("Premio Lealtad");
+    });
+  });
+});
