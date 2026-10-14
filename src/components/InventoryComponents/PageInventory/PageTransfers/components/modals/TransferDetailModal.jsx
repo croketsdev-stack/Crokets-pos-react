@@ -1,4 +1,3 @@
-import React from "react";
 import AppModal from "../../../../../AppModal/AppModal";
 import styles from "../../PageTransfers.module.css";
 import {
@@ -6,23 +5,14 @@ import {
   getTransferStatusMetaForBranch,
 } from "../../utils/transfersUtils";
 
-const TransferDetailModal = ({ order, branch, products, onClose }) => {
+const TransferDetailModal = ({ order, branch, onClose }) => {
   if (!order) return null;
 
   const items = Array.isArray(order?.items) ? order.items : [];
   const statusMeta = getTransferStatusMetaForBranch(order, branch?.id);
 
-  const inventoryByProductId = new Map(
-    (products || []).map((product) => {
-      const productId = String(product?.id || product?.product_id || "");
-      const currentStock = Number(product?.existencia ?? 0) || 0;
-      return [productId, { currentStock }];
-    })
-  );
-
   const orderStatus = String(order?.status || "");
   const isCancelled = orderStatus === "cancelled";
-  const isPending = orderStatus === "pending_receipt";
   const isOriginRoute = String(order?.originBranchId) === String(branch?.id);
   const isDestinationRoute =
     String(order?.destinationBranchId) === String(branch?.id);
@@ -153,10 +143,6 @@ const TransferDetailModal = ({ order, branch, products, onClose }) => {
               const receivedQty = Number(item?.receivedQty ?? 0) || 0;
               const returnedQty = Number(item?.returnedQty ?? 0) || 0;
               const difference = requestedQty - receivedQty - returnedQty;
-
-              const productId = String(item?.productId || item?.id || "");
-              const inventoryRow = inventoryByProductId.get(productId) || {};
-              const currentStock = Number(inventoryRow?.currentStock ?? 0) || 0;
 
               // --- Lectura de snapshots historicos (NULLABLE).
               // Si el dato no existe (NULL) mostramos guion — SIN retro-calculo.

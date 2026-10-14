@@ -3,7 +3,7 @@
 -- Target: PostgreSQL 15+ / Supabase
 -- Repositorio PUBLICO -- Por seguridad SOLO se incluye el DDL de tablas.
 --
---     EXCLUSIONES POR SEGURIDAD (repo publico) 
+--     EXCLUSIONES POR SEGURIDAD (repo publico)
 --   * Las RPCs create_transfer_order / receive_transfer_order / cancel_transfer_order
 --     NO se incluyen aqui por contener logica sensible de manejo de inventario,
 --     stock atomico, descuentos y formulas de negocio.

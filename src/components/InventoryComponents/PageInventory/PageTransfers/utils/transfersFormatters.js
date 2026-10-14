@@ -46,7 +46,7 @@ const getDetectedSystemTimeZone = () => {
     if (typeof detected === "string" && detected.trim() !== "") {
       return detected.trim();
     }
-  } catch (_error) {
+  } catch {
     // Intl falla en entornos headless/legacy sin locale data; devolvemos undefined
     // y getAppTimeZone() usa el fallback por default.
   }
