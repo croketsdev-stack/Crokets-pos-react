@@ -1,6 +1,6 @@
-import React from "react";
 import CircleCheckIcon from "../../../../assets/icons/circle-check-solid-full.svg";
 import TriangleExclamationIcon from "../../../../assets/icons/triangle-exclamation-solid-full.svg";
+import { useBranch } from "../../../../contexts/BranchContext";
 import styles from "./SettingsCash.module.css";
 import useSettingsCash from "./hooks/useSettingsCash";
 import CashOpeningCard from "./components/CashOpeningCard";
@@ -10,6 +10,8 @@ import CashUsdCard from "./components/CashUsdCard";
 import CashDrawerCard from "./components/CashDrawerCard";
 
 const SettingsCash = () => {
+  const { branch } = useBranch();
+
   const {
     adminLoading,
     cashMax,
@@ -20,10 +22,11 @@ const SettingsCash = () => {
     handleSettingChange,
     handleTestDrawer,
     isAdmin,
+    loading,
     saving,
     settings,
     testingDrawer,
-  } = useSettingsCash();
+  } = useSettingsCash({ branchId: branch?.id });
 
   return (
     <section
@@ -43,7 +46,7 @@ const SettingsCash = () => {
           type="button"
           className={styles.button}
           onClick={handleSave}
-          disabled={saving}
+          disabled={saving || loading || adminLoading || !isAdmin}
         >
           {saving ? "Guardando..." : "Guardar configuración"}
         </button>
