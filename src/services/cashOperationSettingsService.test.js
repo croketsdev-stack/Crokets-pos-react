@@ -1,18 +1,48 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
 
+vi.mock("../lib/supabaseClient", () => ({
+  supabase: { from: vi.fn() },
+}));
+
 import {
   getCashOperationSettings,
   saveCashOperationSettings,
+  loadCashOperationSettings,
+  persistCashOperationSettings,
   triggerCashDrawerKick,
+  CASH_OPERATION_SETTING_KEY,
   DEFAULT_CASH_OPERATION_SETTINGS,
 } from "./cashOperationSettingsService";
+import { supabase } from "../lib/supabaseClient";
 
 const STORAGE_KEY = "cash_operation_settings";
+
+const buildQueryChain = ({
+  data = null,
+  error = null,
+  updateError = null,
+  insertError = null,
+} = {}) => {
+  const updateEq = vi.fn(async () => ({ error: updateError }));
+  const query = {
+    select: vi.fn(() => query),
+    eq: vi.fn(() => query),
+    is: vi.fn(() => query),
+    order: vi.fn(() => query),
+    limit: vi.fn(() => query),
+    maybeSingle: vi.fn(async () => ({ data, error })),
+    update: vi.fn(() => ({ eq: updateEq })),
+    insert: vi.fn(async () => ({ error: insertError })),
+    updateEq,
+  };
+  return query;
+};
 
 describe("cashOperationSettingsService", () => {
   beforeEach(() => {
     window.localStorage.clear();
     vi.clearAllMocks();
+    vi.spyOn(console, "error").mockImplementation(() => {});
     if (window.electronAPI) {
       delete window.electronAPI;
     }
@@ -240,5 +270,291 @@ describe("cashOperationSettingsService", () => {
     expect(DEFAULT_CASH_OPERATION_SETTINGS.cashDrawerTrigger).toBe("cash_only");
     expect(DEFAULT_CASH_OPERATION_SETTINGS.acceptUsdPayments).toBe(true);
     expect(DEFAULT_CASH_OPERATION_SETTINGS.defaultExchangeRate).toBe(18.5);
+  });
+});
+
+describe("loadCashOperationSettings", () => {
+  it("hidrata desde system_settings por branch_id y refresca el cache local", async () => {
+    const query = buildQueryChain({
+      data: {
+        id: "setting-1",
+        setting_key: CASH_OPERATION_SETTING_KEY,
+        setting_value: JSON.stringify({
+          defaultOpeningCash: 750,
+          drawerCashLimit: 5000,
+          drawerAlertEnabled: true,
+          acceptUsdPayments: false,
+          defaultExchangeRate: 19.75,
+          blindCountCut: true,
+        }),
+        value_type: "json",
+        branch_id: "branch-42",
+      },
+      error: null,
+    });
+    supabase.from.mockReturnValue(query);
+
+    const result = await loadCashOperationSettings({ branchId: "branch-42" });
+
+    expect(supabase.from).toHaveBeenCalledWith("system_settings");
+    expect(query.eq).toHaveBeenCalledWith(
+      "setting_key",
+      CASH_OPERATION_SETTING_KEY
+    );
+    expect(query.eq).toHaveBeenCalledWith("branch_id", "branch-42");
+    expect(result.success).toBe(true);
+    expect(result.source).toBe("remote");
+    expect(result.error).toBeNull();
+    expect(result.defaultOpeningCash).toBe(750);
+    expect(result.drawerCashLimit).toBe(5000);
+    expect(result.drawerAlertEnabled).toBe(true);
+    expect(result.acceptUsdPayments).toBe(false);
+    expect(result.defaultExchangeRate).toBe(19.75);
+    expect(result.blindCountCut).toBe(true);
+
+    const cached = JSON.parse(window.localStorage.getItem(STORAGE_KEY));
+    expect(cached.defaultOpeningCash).toBe(750);
+    expect(cached.drawerCashLimit).toBe(5000);
+  });
+
+  it("sanea los valores remotos antes de entregarlos y cachearlos", async () => {
+    const query = buildQueryChain({
+      data: {
+        id: "setting-1",
+        setting_value: JSON.stringify({
+          defaultOpeningCash: -50,
+          drawerCashLimit: "abc",
+          drawerAlertEnabled: 1,
+          cashDrawerTrigger: "cash_and_movements",
+          cashDrawerConnection: "usb",
+          acceptUsdPayments: "yes",
+          defaultExchangeRate: -3,
+          minOpeningCashEnabled: true,
+          minOpeningCash: 250,
+          allowZeroOpening: true,
+        }),
+      },
+      error: null,
+    });
+    supabase.from.mockReturnValue(query);
+
+    const result = await loadCashOperationSettings({ branchId: "branch-42" });
+
+    expect(result.source).toBe("remote");
+    expect(result.defaultOpeningCash).toBe(0);
+    expect(result.drawerCashLimit).toBe(0);
+    expect(result.drawerAlertEnabled).toBe(false);
+    expect(result.cashDrawerTrigger).toBe("cash_only");
+    expect(result.cashDrawerConnection).toBe("printer_rj11");
+    expect(result.acceptUsdPayments).toBe(true);
+    expect(result.defaultExchangeRate).toBe(18.5);
+    expect(result.minOpeningCashEnabled).toBe(true);
+    expect(result.minOpeningCash).toBe(250);
+    expect(result.allowZeroOpening).toBe(false);
+  });
+
+  it("cae al cache local cuando Supabase responde con error", async () => {
+    saveCashOperationSettings({ defaultOpeningCash: 300 });
+    const query = buildQueryChain({
+      data: null,
+      error: { message: "network" },
+    });
+    supabase.from.mockReturnValue(query);
+
+    const result = await loadCashOperationSettings({ branchId: "branch-42" });
+
+    expect(result.success).toBe(true);
+    expect(result.source).toBe("cache");
+    expect(result.error).toBeTruthy();
+    expect(result.defaultOpeningCash).toBe(300);
+  });
+
+  it("conserva la configuracion local cuando la sucursal no tiene registro", async () => {
+    saveCashOperationSettings({ drawerCashLimit: 9000 });
+    const query = buildQueryChain({ data: null, error: null });
+    supabase.from.mockReturnValue(query);
+
+    const result = await loadCashOperationSettings({ branchId: "branch-42" });
+
+    expect(result.source).toBe("cache");
+    expect(result.error).toBeNull();
+    expect(result.drawerCashLimit).toBe(9000);
+  });
+
+  it("sin branchId responde desde el cache sin consultar la red", async () => {
+    saveCashOperationSettings({ defaultExchangeRate: 16.9 });
+
+    const result = await loadCashOperationSettings();
+
+    expect(supabase.from).not.toHaveBeenCalled();
+    expect(result.source).toBe("cache");
+    expect(result.success).toBe(true);
+    expect(result.defaultExchangeRate).toBe(16.9);
+  });
+
+  it("cae al cache cuando el payload remoto no es JSON valido", async () => {
+    saveCashOperationSettings({ defaultExchangeRate: 20.2 });
+    const query = buildQueryChain({
+      data: { id: "setting-1", setting_value: "{broken" },
+      error: null,
+    });
+    supabase.from.mockReturnValue(query);
+
+    const result = await loadCashOperationSettings({ branchId: "branch-42" });
+
+    expect(result.source).toBe("cache");
+    expect(result.error).toBeTruthy();
+    expect(result.defaultExchangeRate).toBe(20.2);
+  });
+});
+
+describe("persistCashOperationSettings", () => {
+  it("inserta el registro de la sucursal cuando no existe", async () => {
+    const query = buildQueryChain({ data: null, error: null });
+    supabase.from.mockReturnValue(query);
+
+    const result = await persistCashOperationSettings({
+      branchId: "branch-42",
+      settings: { defaultOpeningCash: 500, drawerCashLimit: 12000 },
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.synced).toBe(true);
+    expect(result.partial).toBe(false);
+    expect(result.error).toBeNull();
+    expect(result.defaultOpeningCash).toBe(500);
+
+    expect(supabase.from).toHaveBeenCalledWith("system_settings");
+    expect(query.update).not.toHaveBeenCalled();
+    expect(query.insert).toHaveBeenCalledTimes(1);
+
+    const row = query.insert.mock.calls[0][0][0];
+    expect(row.setting_key).toBe(CASH_OPERATION_SETTING_KEY);
+    expect(row.branch_id).toBe("branch-42");
+    expect(row.value_type).toBe("json");
+    expect(row.is_active).toBe(true);
+
+    const persisted = JSON.parse(row.setting_value);
+    expect(persisted.defaultOpeningCash).toBe(500);
+    expect(persisted.drawerCashLimit).toBe(12000);
+
+    const cached = JSON.parse(window.localStorage.getItem(STORAGE_KEY));
+    expect(cached.defaultOpeningCash).toBe(500);
+    expect(cached.drawerCashLimit).toBe(12000);
+  });
+
+  it("actualiza el registro existente de la sucursal", async () => {
+    const query = buildQueryChain({
+      data: { id: "setting-9" },
+      error: null,
+    });
+    supabase.from.mockReturnValue(query);
+
+    const result = await persistCashOperationSettings({
+      branchId: "branch-42",
+      settings: { acceptUsdPayments: false, defaultExchangeRate: 17.25 },
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.synced).toBe(true);
+    expect(query.insert).not.toHaveBeenCalled();
+    expect(query.update).toHaveBeenCalledTimes(1);
+    expect(query.updateEq).toHaveBeenCalledWith("id", "setting-9");
+
+    const payload = query.update.mock.calls[0][0];
+    expect(payload.value_type).toBe("json");
+    expect(payload.is_active).toBe(true);
+
+    const persisted = JSON.parse(payload.setting_value);
+    expect(persisted.acceptUsdPayments).toBe(false);
+    expect(persisted.defaultExchangeRate).toBe(17.25);
+  });
+
+  it("escribe el cache local y reporta guardado parcial cuando falla la red", async () => {
+    const query = buildQueryChain({
+      data: { id: "setting-9" },
+      error: null,
+      updateError: { message: "offline" },
+    });
+    supabase.from.mockReturnValue(query);
+
+    const result = await persistCashOperationSettings({
+      branchId: "branch-42",
+      settings: { drawerCashLimit: 7777 },
+    });
+
+    expect(result.success).toBe(true);
+    expect(result.partial).toBe(true);
+    expect(result.synced).toBe(false);
+    expect(result.error).toBe("offline");
+    expect(result.drawerCashLimit).toBe(7777);
+
+    const cached = JSON.parse(window.localStorage.getItem(STORAGE_KEY));
+    expect(cached.drawerCashLimit).toBe(7777);
+    expect(getCashOperationSettings().drawerCashLimit).toBe(7777);
+  });
+
+  it("reporta fallo sin sucursal activa pero conserva la configuracion local", async () => {
+    const result = await persistCashOperationSettings({
+      branchId: null,
+      settings: { defaultOpeningCash: 1500 },
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.synced).toBe(false);
+    expect(result.error).toBeTruthy();
+    expect(supabase.from).not.toHaveBeenCalled();
+    expect(getCashOperationSettings().defaultOpeningCash).toBe(1500);
+  });
+
+  it("sanea y combina con la configuracion vigente antes de persistir", async () => {
+    saveCashOperationSettings({
+      defaultOpeningCash: 400,
+      drawerCashLimit: 6000,
+    });
+    const query = buildQueryChain({ data: null, error: null });
+    supabase.from.mockReturnValue(query);
+
+    const result = await persistCashOperationSettings({
+      branchId: "branch-42",
+      settings: {
+        drawerCashLimit: -1,
+        cashDrawerTrigger: "invalid",
+        defaultExchangeRate: "abc",
+      },
+    });
+
+    expect(result.synced).toBe(true);
+    expect(result.drawerCashLimit).toBe(0);
+    expect(result.cashDrawerTrigger).toBe("cash_only");
+    expect(result.defaultExchangeRate).toBe(18.5);
+    expect(result.defaultOpeningCash).toBe(400);
+
+    const row = query.insert.mock.calls[0][0][0];
+    const persisted = JSON.parse(row.setting_value);
+    expect(persisted.defaultOpeningCash).toBe(400);
+    expect(persisted.drawerCashLimit).toBe(0);
+  });
+
+  it("reporta fallo cuando el cache local no se puede escribir", async () => {
+    const setItemSpy = vi
+      .spyOn(Storage.prototype, "setItem")
+      .mockImplementation(() => {
+        throw new Error("quota");
+      });
+
+    try {
+      const result = await persistCashOperationSettings({
+        branchId: "branch-42",
+        settings: { drawerCashLimit: 100 },
+      });
+
+      expect(result.success).toBe(false);
+      expect(result.synced).toBe(false);
+      expect(result.error).toBeTruthy();
+      expect(supabase.from).not.toHaveBeenCalled();
+    } finally {
+      setItemSpy.mockRestore();
+    }
   });
 });
