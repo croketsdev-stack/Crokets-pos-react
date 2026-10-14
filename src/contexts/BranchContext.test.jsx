@@ -1,6 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+
+vi.mock("../services/cashOperationSettingsService", () => ({
+  loadCashOperationSettings: vi.fn(),
+}));
+
 import { BranchProvider, useBranch } from "./BranchContext";
+import { loadCashOperationSettings } from "../services/cashOperationSettingsService";
 
 const Consumer = () => {
   const { branch, setBranch } = useBranch();
@@ -23,6 +29,12 @@ const Consumer = () => {
 describe("BranchContext", () => {
   beforeEach(() => {
     localStorage.clear();
+    vi.clearAllMocks();
+    loadCashOperationSettings.mockResolvedValue({
+      success: true,
+      source: "remote",
+      error: null,
+    });
   });
 
   it("expone el valor nulo cuando no hay sucursal en cache", () => {
@@ -85,6 +97,81 @@ describe("BranchContext", () => {
     expect(screen.getByTestId("branch-name").textContent).toBe(
       "Sucursal Cacheada"
     );
+  });
+
+  it("hidrata la configuracion de caja al restaurar la sucursal desde cache", async () => {
+    localStorage.setItem(
+      "currentBranch",
+      JSON.stringify({ id: "branch-test", name: "Torres" })
+    );
+
+    render(
+      <BranchProvider>
+        <Consumer />
+      </BranchProvider>
+    );
+
+    await waitFor(() => {
+      expect(loadCashOperationSettings).toHaveBeenCalledWith({
+        branchId: "branch-test",
+      });
+    });
+  });
+
+  it("hidrata la configuracion de caja al establecer una sucursal", async () => {
+    render(
+      <BranchProvider>
+        <Consumer />
+      </BranchProvider>
+    );
+
+    expect(loadCashOperationSettings).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByText("set"));
+
+    await waitFor(() => {
+      expect(loadCashOperationSettings).toHaveBeenCalledWith({
+        branchId: "b1",
+      });
+    });
+  });
+
+  it("no consulta la configuracion de caja sin sucursal activa", () => {
+    render(
+      <BranchProvider>
+        <Consumer />
+      </BranchProvider>
+    );
+
+    expect(loadCashOperationSettings).not.toHaveBeenCalled();
+  });
+
+  it("conserva la sucursal si la hidratacion de caja falla", async () => {
+    loadCashOperationSettings.mockRejectedValue(new Error("offline"));
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    localStorage.setItem(
+      "currentBranch",
+      JSON.stringify({ id: "branch-test", name: "Torres" })
+    );
+
+    try {
+      render(
+        <BranchProvider>
+          <Consumer />
+        </BranchProvider>
+      );
+
+      await waitFor(() => {
+        expect(loadCashOperationSettings).toHaveBeenCalledWith({
+          branchId: "branch-test",
+        });
+      });
+
+      expect(screen.getByTestId("branch-name").textContent).toBe("Torres");
+      expect(errorSpy).toHaveBeenCalled();
+    } finally {
+      errorSpy.mockRestore();
+    }
   });
 
   it("tolera un JSON corrupto en cache", () => {
