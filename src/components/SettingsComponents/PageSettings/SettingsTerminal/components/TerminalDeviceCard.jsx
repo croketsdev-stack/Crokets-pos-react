@@ -1,4 +1,5 @@
 import displayIcon from "../../../../../assets/icons/display-solid-full.svg";
+import ScopeBadge from "../../components/ScopeBadge";
 import styles from "../SettingsTerminal.module.css";
 
 const TerminalDeviceCard = ({
@@ -33,6 +34,7 @@ const TerminalDeviceCard = ({
               </p>
             </div>
           </div>
+          <ScopeBadge scope="device" />
         </div>
       </header>
 

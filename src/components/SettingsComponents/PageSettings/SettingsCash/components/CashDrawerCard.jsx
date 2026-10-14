@@ -1,5 +1,6 @@
 import React from "react";
 import styles from "../SettingsCash.module.css";
+import ScopeBadge from "../../components/ScopeBadge";
 import ToggleSwitch from "./ToggleSwitch";
 import RadioOption from "./RadioOption";
 import CircleCheckIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
@@ -18,9 +19,12 @@ const CashDrawerCard = ({
 
   return (
     <article className={styles.card}>
-      <h2 className={styles.cardTitle}>
-        Dispositivo: Cajón de Dinero (Gaveta)
-      </h2>
+      <div className={styles.cardTitleRow}>
+        <h2 className={styles.cardTitle}>
+          Dispositivo: Cajón de Dinero (Gaveta)
+        </h2>
+        <ScopeBadge scope="branch" />
+      </div>
       <p className={styles.cardDescription}>
         Configuración del hardware para apertura automática del cajón.
       </p>

@@ -1,11 +1,15 @@
 import React from "react";
 import styles from "../SettingsCash.module.css";
+import ScopeBadge from "../../components/ScopeBadge";
 import MonetaryInput from "./MonetaryInput";
 import ToggleSwitch from "./ToggleSwitch";
 
 const CashUsdCard = ({ settings, onSettingChange }) => (
   <article className={styles.card}>
-    <h2 className={styles.cardTitle}>Cobros en Dólares (USD)</h2>
+    <div className={styles.cardTitleRow}>
+      <h2 className={styles.cardTitle}>Cobros en Dólares (USD)</h2>
+      <ScopeBadge scope="branch" />
+    </div>
     <p className={styles.cardDescription}>
       Reglas operativas para la recepción de moneda extranjera en punto de
       venta.

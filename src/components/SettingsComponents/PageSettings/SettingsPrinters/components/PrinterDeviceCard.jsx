@@ -1,4 +1,5 @@
 import styles from "../SettingsPrinters.module.css";
+import ScopeBadge from "../../components/ScopeBadge";
 import rotateIcon from "../../../../../assets/icons/rotate-solid-full.svg";
 import infoIcon from "../../../../../assets/icons/circle-info-solid-full.svg";
 import warningIcon from "../../../../../assets/icons/triangle-exclamation-solid-full.svg";
@@ -26,7 +27,10 @@ const PrinterDeviceCard = ({
 
   return (
     <article className={styles.card}>
-      <h2 className={styles.cardTitle}>Impresora física del sistema</h2>
+      <div className={styles.cardTitleRow}>
+        <h2 className={styles.cardTitle}>Impresora física del sistema</h2>
+        <ScopeBadge scope="device" />
+      </div>
       <p className={styles.cardDescription}>
         Compatible con cualquier impresora térmica instalada en el equipo
         (Epson, Xprinter, EC-Line, Star, Bixolon, POS-58/80 por USB, red

@@ -1,5 +1,6 @@
 import React from "react";
 import styles from "../SettingsCash.module.css";
+import ScopeBadge from "../../components/ScopeBadge";
 import MonetaryInput from "./MonetaryInput";
 import ToggleSwitch from "./ToggleSwitch";
 
@@ -12,7 +13,10 @@ const CashOpeningCard = ({
   onSettingChange,
 }) => (
   <article className={styles.card}>
-    <h2 className={styles.cardTitle}>Políticas de Apertura de Caja</h2>
+    <div className={styles.cardTitleRow}>
+      <h2 className={styles.cardTitle}>Políticas de Apertura de Caja</h2>
+      <ScopeBadge scope="branch" />
+    </div>
     <p className={styles.cardDescription}>
       Configuración de topes, fondos mínimos y valores sugeridos al iniciar
       turno.

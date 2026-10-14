@@ -1,4 +1,5 @@
 import styles from "../SettingsPrinters.module.css";
+import ScopeBadge from "../../components/ScopeBadge";
 import printIcon from "../../../../../assets/icons/print-solid-full.svg";
 import moneyIcon from "../../../../../assets/icons/money-bill-wave-solid-full.svg";
 import checkIcon from "../../../../../assets/icons/circle-check-solid-full.svg";
@@ -14,7 +15,10 @@ const TicketDiagnosticCard = ({
   isElectron = false,
 }) => (
   <article className={styles.card}>
-    <h2 className={styles.cardTitle}>Diagnóstico de hardware</h2>
+    <div className={styles.cardTitleRow}>
+      <h2 className={styles.cardTitle}>Diagnóstico de hardware</h2>
+      <ScopeBadge scope="device" />
+    </div>
 
     <div className={styles.diagnosticBlock}>
       <div className={styles.diagnosticHeader}>
