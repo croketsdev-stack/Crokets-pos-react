@@ -20,10 +20,8 @@ const STORAGE_KEY = "cash_operation_settings";
 const buildQueryChain = ({
   data = null,
   error = null,
-  updateError = null,
-  insertError = null,
+  upsertError = null,
 } = {}) => {
-  const updateEq = vi.fn(async () => ({ error: updateError }));
   const query = {
     select: vi.fn(() => query),
     eq: vi.fn(() => query),
@@ -31,9 +29,7 @@ const buildQueryChain = ({
     order: vi.fn(() => query),
     limit: vi.fn(() => query),
     maybeSingle: vi.fn(async () => ({ data, error })),
-    update: vi.fn(() => ({ eq: updateEq })),
-    insert: vi.fn(async () => ({ error: insertError })),
-    updateEq,
+    upsert: vi.fn(async () => ({ error: upsertError })),
   };
   return query;
 };
@@ -409,7 +405,7 @@ describe("loadCashOperationSettings", () => {
 });
 
 describe("persistCashOperationSettings", () => {
-  it("inserta el registro de la sucursal cuando no existe", async () => {
+  it("hace upsert atomico del registro de la sucursal sin select previo", async () => {
     const query = buildQueryChain({ data: null, error: null });
     supabase.from.mockReturnValue(query);
 
@@ -425,16 +421,21 @@ describe("persistCashOperationSettings", () => {
     expect(result.defaultOpeningCash).toBe(500);
 
     expect(supabase.from).toHaveBeenCalledWith("system_settings");
-    expect(query.update).not.toHaveBeenCalled();
-    expect(query.insert).toHaveBeenCalledTimes(1);
+    expect(query.maybeSingle).not.toHaveBeenCalled();
+    expect(query.upsert).toHaveBeenCalledTimes(1);
 
-    const row = query.insert.mock.calls[0][0][0];
-    expect(row.setting_key).toBe(CASH_OPERATION_SETTING_KEY);
-    expect(row.branch_id).toBe("branch-42");
-    expect(row.value_type).toBe("json");
-    expect(row.is_active).toBe(true);
+    const payload = query.upsert.mock.calls[0][0];
+    expect(payload.setting_key).toBe(CASH_OPERATION_SETTING_KEY);
+    expect(payload.branch_id).toBe("branch-42");
+    expect(payload.value_type).toBe("json");
+    expect(payload.is_active).toBe(true);
+    expect(payload.id).toBeUndefined();
 
-    const persisted = JSON.parse(row.setting_value);
+    expect(query.upsert.mock.calls[0][1]).toEqual({
+      onConflict: "setting_key,branch_id",
+    });
+
+    const persisted = JSON.parse(payload.setting_value);
     expect(persisted.defaultOpeningCash).toBe(500);
     expect(persisted.drawerCashLimit).toBe(12000);
 
@@ -443,7 +444,7 @@ describe("persistCashOperationSettings", () => {
     expect(cached.drawerCashLimit).toBe(12000);
   });
 
-  it("actualiza el registro existente de la sucursal", async () => {
+  it("actualiza un registro existente por la misma via de upsert", async () => {
     const query = buildQueryChain({
       data: { id: "setting-9" },
       error: null,
@@ -457,11 +458,10 @@ describe("persistCashOperationSettings", () => {
 
     expect(result.success).toBe(true);
     expect(result.synced).toBe(true);
-    expect(query.insert).not.toHaveBeenCalled();
-    expect(query.update).toHaveBeenCalledTimes(1);
-    expect(query.updateEq).toHaveBeenCalledWith("id", "setting-9");
+    expect(query.maybeSingle).not.toHaveBeenCalled();
+    expect(query.upsert).toHaveBeenCalledTimes(1);
 
-    const payload = query.update.mock.calls[0][0];
+    const payload = query.upsert.mock.calls[0][0];
     expect(payload.value_type).toBe("json");
     expect(payload.is_active).toBe(true);
 
@@ -472,9 +472,9 @@ describe("persistCashOperationSettings", () => {
 
   it("escribe el cache local y reporta guardado parcial cuando falla la red", async () => {
     const query = buildQueryChain({
-      data: { id: "setting-9" },
+      data: null,
       error: null,
-      updateError: { message: "offline" },
+      upsertError: { message: "offline" },
     });
     supabase.from.mockReturnValue(query);
 
@@ -530,8 +530,8 @@ describe("persistCashOperationSettings", () => {
     expect(result.defaultExchangeRate).toBe(18.5);
     expect(result.defaultOpeningCash).toBe(400);
 
-    const row = query.insert.mock.calls[0][0][0];
-    const persisted = JSON.parse(row.setting_value);
+    const payload = query.upsert.mock.calls[0][0];
+    const persisted = JSON.parse(payload.setting_value);
     expect(persisted.defaultOpeningCash).toBe(400);
     expect(persisted.drawerCashLimit).toBe(0);
   });

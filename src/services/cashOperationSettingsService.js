@@ -351,7 +351,10 @@ export async function loadCashOperationSettings({ branchId = null } = {}) {
  *
  * Orden cache-first: primero escribe el cache local (garantizando que la
  * apertura y el cobro sigan operando sin red) y despues sincroniza el
- * registro en system_settings (update si ya existe, insert si no).
+ * registro en system_settings con un upsert atomico sobre la restriccion
+ * unica (setting_key, branch_id). El upsert evita el TOCTOU del select+insert
+ * cuando dos terminales guardan por primera vez a la vez, y deja que Postgres
+ * genere el id con su default (gen_random_uuid()).
  *
  * Si la sincronizacion remota falla, devuelve `success: true` con
  * `partial: true` y `synced: false` para que la interfaz reporte que los
@@ -388,49 +391,22 @@ export async function persistCashOperationSettings({
     const settingValue = JSON.stringify(merged);
     const now = new Date().toISOString();
 
-    const { data: existing, error: existingError } = await supabase
+    const { error: upsertError } = await supabase
       .from("system_settings")
-      .select("id")
-      .eq("setting_key", CASH_OPERATION_SETTING_KEY)
-      .eq("branch_id", branchId)
-      .eq("is_active", true)
-      .limit(1)
-      .maybeSingle();
-
-    if (existingError) throw existingError;
-
-    if (existing?.id) {
-      const { error: updateError } = await supabase
-        .from("system_settings")
-        .update({
+      .upsert(
+        {
+          setting_key: CASH_OPERATION_SETTING_KEY,
           setting_value: settingValue,
           value_type: "json",
           description: SETTING_DESCRIPTION,
+          branch_id: branchId,
           is_active: true,
           updated_at: now,
-        })
-        .eq("id", existing.id);
+        },
+        { onConflict: "setting_key,branch_id" }
+      );
 
-      if (updateError) throw updateError;
-    } else {
-      const { error: insertError } = await supabase
-        .from("system_settings")
-        .insert([
-          {
-            id: crypto.randomUUID(),
-            setting_key: CASH_OPERATION_SETTING_KEY,
-            setting_value: settingValue,
-            value_type: "json",
-            description: SETTING_DESCRIPTION,
-            branch_id: branchId,
-            is_active: true,
-            created_at: now,
-            updated_at: now,
-          },
-        ]);
-
-      if (insertError) throw insertError;
-    }
+    if (upsertError) throw upsertError;
 
     return {
       success: true,
