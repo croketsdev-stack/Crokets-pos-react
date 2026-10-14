@@ -46,6 +46,7 @@
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
 }
 
 .cardTitle {
@@ -53,6 +54,10 @@
   font-size: 1rem;
   font-weight: 700;
   margin: 0 0 0.35rem;
+}
+
+.cardTitleRow .cardTitle {
+  margin: 0;
 }
 
 .cardDescription {

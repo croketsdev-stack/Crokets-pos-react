@@ -21,7 +21,7 @@ const CashDrawerCard = ({
     <article className={styles.card}>
       <div className={styles.cardTitleRow}>
         <h2 className={styles.cardTitle}>
-          Dispositivo: Cajón de Dinero (Gaveta)
+          Políticas del Cajón de Dinero (Gaveta)
         </h2>
         <ScopeBadge scope="branch" />
       </div>
