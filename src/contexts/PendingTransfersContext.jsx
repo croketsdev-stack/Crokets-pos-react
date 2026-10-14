@@ -40,7 +40,6 @@ export const PendingTransfersProvider = ({ children }) => {
       return;
     }
 
-    setPendingReceiptsCount(0);
     setIsLoading(true);
     try {
       const orders = await loadTransferOrders();
@@ -55,10 +54,11 @@ export const PendingTransfersProvider = ({ children }) => {
   }, [currentBranchId]);
 
   useEffect(() => {
-    // Reset state de count + loading a valores iniciales ANTES de ejecutar fetch asíncrono (refresh).
-    // Pattern standard: setLoading(true) + await + setData + setLoading(false).
-    // La regla react-hooks/set-state-in-effect reporta falso positivo por cadena de llamada vía refresh.
-    void refresh(); // eslint-disable-line react-hooks/set-state-in-effect
+    // Reset del conteo solo al montar o al cambiar de sucursal (identidad de refresh),
+    // NO en cada poll: resetear dentro de refresh hacía parpadear el badge a 0 cada
+    // POLL_MS mientras se resolvía la petición.
+    setPendingReceiptsCount(0); // eslint-disable-line react-hooks/set-state-in-effect -- reset acotado a cambio de sucursal, no al poll
+    void refresh();
   }, [refresh]);
 
   useEffect(() => {

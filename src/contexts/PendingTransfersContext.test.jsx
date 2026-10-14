@@ -1,6 +1,6 @@
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent } from "@testing-library/react";
 
 vi.mock(
   "../components/InventoryComponents/PageInventory/PageTransfers/services/transfersService",
@@ -102,6 +102,51 @@ describe("PendingTransfersContext - refresh", () => {
 
     await waitFor(() => {
       expect(screen.getByTestId("count").textContent).toBe("5");
+    });
+  });
+
+  it("no resetea el conteo a 0 mientras un refresh esta en vuelo (evita parpadeo del badge)", async () => {
+    loadTransferOrders.mockResolvedValue([{ id: "t1" }]);
+    getPendingReceiptsCount.mockReturnValue(3);
+
+    let resolveSecond;
+    const secondCall = new Promise((resolve) => {
+      resolveSecond = resolve;
+    });
+
+    const RefreshConsumer = () => {
+      const { pendingReceiptsCount, refreshPendingTransfers } =
+        usePendingTransfers();
+      return (
+        <div>
+          <span data-testid="count">{pendingReceiptsCount}</span>
+          <button type="button" onClick={() => void refreshPendingTransfers()}>
+            refresh
+          </button>
+        </div>
+      );
+    };
+
+    render(
+      <PendingTransfersProvider>
+        <RefreshConsumer />
+      </PendingTransfersProvider>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId("count").textContent).toBe("3");
+    });
+
+    loadTransferOrders.mockReturnValue(secondCall);
+    getPendingReceiptsCount.mockReturnValue(7);
+
+    fireEvent.click(screen.getByRole("button", { name: "refresh" }));
+
+    expect(screen.getByTestId("count").textContent).toBe("3");
+
+    resolveSecond([{ id: "t1" }, { id: "t2" }]);
+    await waitFor(() => {
+      expect(screen.getByTestId("count").textContent).toBe("7");
     });
   });
 
