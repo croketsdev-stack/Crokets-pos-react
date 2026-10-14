@@ -959,6 +959,28 @@ formatea los valores efectivos cuando aplica.
 nueva en `commissionsCalculationService.test.js` (exención con prioridad sobre el depto, comisión
 propia, herencia solo con `commission_enabled` null/ausente, producto sin departamento).
 
+### 63. system_settings sin RLS y acceso de escritura por anon key (SEC-SETTINGS-001)
+
+**Estado:** Abierto / Pendiente de migración RPC.
+
+**Severidad:** Medio (deuda técnica de esquema preexistente).
+
+La tabla `public.system_settings` no tiene RLS habilitado y conserva `GRANT ALL TO anon`
+(verificado en el baseline `supabase/migrations/00000000000000_remote_schema_baseline.sql`, que la
+crea sin `ENABLE ROW LEVEL SECURITY` y le concede `ALL` a `anon`). Cualquier cliente con la anon key
+puede leer y escribir en la tabla, incluida la fila `cash_operation_settings` que gobierna las reglas
+financieras y de tickets por sucursal.
+
+Las reglas financieras y de tickets se gatean actualmente solo en la UI mediante `is_admin()`, por lo
+que la restricción de rol es cosmética: un cliente `cajero` que conozca la anon key puede alterar
+`setting_value` directamente por API aunque la interfaz le oculte la sección.
+
+**Recomendación futura:** implementar una migración que habilite RLS con una política de escritura
+solo para administradores, o encapsular la persistencia en una función RPC `SECURITY DEFINER` con
+`REVOKE` a `anon`/`public` (patrón de `update_cash_max_opening_amount`,
+`supabase/migrations/20260918120000_app_settings_cash_rpcs.sql`). Queda diferido; el servicio
+`persistCashOperationSettings` hoy persiste con `.upsert(...)` directo desde el cliente.
+
 ---
 
 ## Bajo
